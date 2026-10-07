@@ -526,6 +526,14 @@ export default function BookGym() {
             startsAt: data.starts_at || null,
             seatsLeft: data.seats_left ?? null,
             payUrl,
+            // The screen that renders between setDone and the Square page
+            // actually loading (a second or two on 4G) must not read as a
+            // finished booking — "REQUEST SENT" made members think they
+            // were done and close the tab before the card page arrived.
+            // This flag swaps that interim screen to "Taking you to
+            // payment…", and it doubles as the fallback screen if the
+            // navigation is ever blocked.
+            redirecting: Boolean(payUrl),
             // Step 11: a guest has no login, so this token is their ONLY way
             // back to their own booking to cancel it. Kept in state so the
             // confirmation screen can hand it over — if it is lost here it
@@ -596,6 +604,8 @@ export default function BookGym() {
       payMethod: method,
       total: priceOf(active) * offlinePlaces,
       payUrl: offlinePayUrl,
+      // Same interim-screen rule as the live path above.
+      redirecting: Boolean(offlinePayUrl),
     })
     setActive(null)
     setBusy(false)
@@ -632,12 +642,20 @@ export default function BookGym() {
             <h2 className="bk__doneTitle">
               {done.paidReturn
                 ? 'Payment received.'
-                : done.waitlisted
-                  ? "You're on the list."
-                  : done.live ? "You're booked in." : "Request sent."}
+                : done.redirecting
+                  ? 'Taking you to payment\u2026'
+                  : done.waitlisted
+                    ? "You're on the list."
+                    : done.live ? "You're booked in." : "Request sent."}
             </h2>
             <p className="bk__doneBody">
-              {done.paidReturn ? (
+              {done.redirecting ? (
+                <>
+                  We&rsquo;ve got your name down for <strong>{done.title}</strong> &mdash;
+                  your space is secured once your payment goes through. Square&rsquo;s
+                  secure card page is loading now.
+                </>
+              ) : done.paidReturn ? (
                 <>
                   Your payment has gone through &mdash; that&rsquo;s everything done.
                   A coach will check you in on the day. See you there.
@@ -663,16 +681,6 @@ export default function BookGym() {
                     <>Your space for <strong>{done.title}</strong> is reserved.</>
                   )}{' '}
                   See you there.
-                </>
-              ) : done.payMethod === 'online' && done.payUrl ? (
-                // An online payer with a live checkout link must never read
-                // that the group chat confirms their space — payment does.
-                // This branch exists for the moment the auto-redirect is
-                // blocked and someone actually reads this screen.
-                <>
-                  We&rsquo;ve got your name down for <strong>{done.title}</strong>. Your space
-                  is secured once your payment goes through — you&rsquo;re being taken to
-                  checkout now. A coach will check you in on the day.
                 </>
               ) : (
                 <>
