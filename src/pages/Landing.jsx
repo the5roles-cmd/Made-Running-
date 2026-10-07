@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   TrendingUp,
   MapPin,
-  Play,
 } from 'lucide-react'
 
 // ============================================================
@@ -178,6 +177,79 @@ function Reveal({ as: Tag = 'div', delay = 0, className = '', style, children })
   )
 }
 
+// ── Parallax: compositor-only scroll drift ───────────────────────────
+//
+// The club asked for parallax scrolling, with the emphasis on SMOOTH — so
+// the engine is built around the three things that make scroll effects
+// stutter, and avoids each:
+//   1. Work in the scroll handler → here the handler only schedules one
+//      requestAnimationFrame; all measuring/writing happens in the frame,
+//      coalesced across every registered surface (same registry pattern as
+//      revealRegistry above).
+//   2. Layout-triggering properties → only `transform` is ever written,
+//      which stays on the compositor. No top/margin/background-position.
+//   3. Measurement feedback → the element being moved is never measured.
+//      Each surface is an absolutely-positioned cover image inside an
+//      overflow:hidden frame, and the FRAME (el.parentElement) is what gets
+//      measured — it never has a transform, so reads are stable and there
+//      is no drift loop from reading back our own translate.
+//
+// The scale() is not decoration: it is the overscan budget. A cover image
+// translated inside its frame exposes a gap at the opposite edge unless it
+// is first zoomed past the frame. budget = height·(scale−1)/2 is exactly
+// how far it can travel before an edge shows, and y is clamped to that, so
+// a gap is impossible by construction rather than by tuning.
+//
+// prefers-reduced-motion: the hook simply never registers, leaving the
+// static object-position crops (which were chosen per-photo) untouched.
+
+const parallaxRegistry = new Set()
+let parallaxBound = false
+let parallaxRaf = 0
+
+function parallaxFrame() {
+  parallaxRaf = 0
+  const vh = window.innerHeight || document.documentElement.clientHeight || 1
+  parallaxRegistry.forEach(({ el, speed, scale }) => {
+    const frame = el.parentElement
+    if (!frame) return
+    const r = frame.getBoundingClientRect()
+    // Offscreen (with margin): skip the style write entirely.
+    if (r.bottom < -120 || r.top > vh + 120) return
+    const mid = r.top + r.height / 2
+    let y = (vh / 2 - mid) * speed
+    const budget = (r.height * (scale - 1)) / 2
+    if (y > budget) y = budget
+    if (y < -budget) y = -budget
+    el.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0) scale(${scale})`
+  })
+}
+
+function scheduleParallaxFrame() {
+  if (!parallaxRaf) parallaxRaf = requestAnimationFrame(parallaxFrame)
+}
+
+function useParallax(speed = 0.08, scale = 1.1) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || prefersReducedMotion()) return undefined
+    const entry = { el, speed, scale }
+    parallaxRegistry.add(entry)
+    if (!parallaxBound) {
+      parallaxBound = true
+      window.addEventListener('scroll', scheduleParallaxFrame, { passive: true })
+      window.addEventListener('resize', scheduleParallaxFrame, { passive: true })
+    }
+    scheduleParallaxFrame() // position correctly before the first scroll
+    return () => {
+      parallaxRegistry.delete(entry)
+      el.style.transform = ''
+    }
+  }, [speed, scale])
+  return ref
+}
+
 // ── Data ──────────────────────────────────────────────────────
 
 const PROOF_CHIPS = [
@@ -249,120 +321,14 @@ const QUICK_PATHS = [
 ]
 
 
-// ── Community media wall ("Run It. Share It.") ──────────────────
-// A Lululemon-style UGC mosaic, but VIDEO-NATIVE. Each tile upgrades to
-// a live, autoplay-in-view <video> the instant a file exists at `video`;
-// until then it shows `poster` (a real Made Running photo, treated as a
-// reel cover) or, with neither, a branded "your reel here" slot. The
-// client drops their @made.running reels into public/img/community/ and
-// fills in the `video` paths below — no other change needed.
-//
-// EXACTLY 8 tiles, mirroring Lululemon's "Wear It. Share It." wall:
-// one big hero left, two smalls top-centre, a tall centre offset down,
-// a big hero right, two smalls bottom-left, one wide bottom-right.
-// span drives the mosaic on a 6-column dense grid:
-//   'big'   = 2 cols × 4 rows (the three tall heroes)
-//   'small' = 1 col  × 2 rows
-//   'wide'  = 2 cols × 2 rows
-// KEEP THIS SOURCE ORDER: with grid-auto-flow:dense, the browser places
-// tiles in order — the third 'big' lands in the centre hole at row 3,
-// which is what creates the staggered Lululemon composition. Reordering
-// spans will re-tile the wall (that's the editorial dial to turn).
-const COMMUNITY_MEDIA = [
-  { span: 'big', video: null, poster: '/img/hero-crew-1100.jpg', focus: '50% 30%', alt: 'Made Running members arm-in-arm on Deansgate, Manchester.' },
-  { span: 'small', video: null, poster: '/img/support-1600.jpg', focus: '50% 32%', alt: 'One Made Running member holding another up after a session.' },
-  { span: 'small', video: null, poster: null, handle: '@made.running' },
-  { span: 'big', video: null, poster: '/img/hero-pack-1280.jpg', focus: '50% 38%', alt: 'The Made Running pack running down Deansgate.' },
-  { span: 'big', video: null, poster: '/img/creed-vest-1600.jpg', focus: '50% 76%', alt: 'The back of a Made Running vest: No One Gets Left Behind.' },
-  { span: 'small', video: null, poster: null, handle: '#NoOneGetsLeftBehind' },
-  { span: 'small', video: null, poster: null, cta: true },
-  { span: 'wide', video: null, poster: null, handle: '#MadeRunning' },
-]
-
-// One mosaic tile. Renders <video> when a src exists (autoplay only while
-// in view — an 8-video wall that all play at once punishes mobile battery
-// and data, so we play the visible ones and pause the rest, and never
-// autoplay at all under prefers-reduced-motion), a poster <img> with a
-// slow Ken Burns drift otherwise, or a branded slot when there's neither.
-function MediaTile({ item }) {
-  const ref = useRef(null)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el || !item.video) return undefined
-    if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') return undefined
-    const io = new IntersectionObserver(
-      // The callback can deliver SEVERAL queued entries after a fast scroll.
-      // Destructuring `([e])` reads the OLDEST one, so the video could pause
-      // on a stale "not intersecting" while it is plainly on screen. The
-      // last entry is the current truth.
-      (entries) => {
-        const e = entries[entries.length - 1]
-        if (e.isIntersecting) el.play?.().catch(() => {})
-        else el.pause?.()
-      },
-      { threshold: 0.4 },
-    )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [item.video])
-
-  const cls = `tp-ugc__tile tp-ugc__tile--${item.span || 'base'}`
-
-  if (item.video) {
-    return (
-      <div className={cls}>
-        <video
-          ref={ref}
-          className="tp-ugc__media"
-          src={item.video}
-          poster={item.poster || undefined}
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-label={item.alt || 'Community video'}
-          style={item.focus ? { objectPosition: item.focus } : undefined}
-        />
-        <span className="tp-ugc__badge" aria-hidden="true"><Play size={15} fill="currentColor" /></span>
-      </div>
-    )
-  }
-
-  if (item.poster) {
-    return (
-      <div className={cls}>
-        <img
-          className="tp-ugc__media tp-ugc__media--kb"
-          src={item.poster}
-          loading="lazy"
-          decoding="async"
-          alt={item.alt || ''}
-          style={item.focus ? { objectPosition: item.focus } : undefined}
-        />
-        <span className="tp-ugc__badge" aria-hidden="true"><Play size={15} fill="currentColor" /></span>
-        <span className="tp-ugc__tag">Reel</span>
-      </div>
-    )
-  }
-
-  // Branded placeholder slot — reads as "drop your reel here".
-  return (
-    <div className={`${cls} tp-ugc__tile--slot`}>
-      <span className="tp-ugc__slotmark">{PRODUCT_MARK}</span>
-      <span className="tp-ugc__slottext">{item.cta ? 'Add yours' : item.handle || '@made.running'}</span>
-      <span className="tp-ugc__slothint">{item.cta ? 'Tag us to feature' : 'Your reel here'}</span>
-    </div>
-  )
-}
-
-// The ambient half of the films band (section 7a): the club's 6-second
-// landscape film, muted, looping, playing ONLY while on screen — the same
-// play-in-view contract as the media wall above it, for the same battery
-// and data reasons. Under prefers-reduced-motion it never starts and the
-// poster frame stands in. The 30-second portrait film next to it is NOT
-// this component: it has audio worth hearing, so it renders a plain
-// <video controls preload="none"> and costs nothing until pressed.
+// The ambient tiles of the "Run It. Share It." film wall: the club's
+// landscape films, muted, looping, playing ONLY while on screen — a wall
+// of videos that all play at once punishes mobile battery and data, so
+// each one plays in view and pauses out of it. Under prefers-reduced-
+// motion it never starts and the poster frame stands in. The 30-second
+// portrait film beside them is NOT this component: it has audio worth
+// hearing, so it renders a plain <video controls preload="none"> and
+// costs nothing until pressed.
 function AmbientFilm({ src, poster, alt, className }) {
   const ref = useRef(null)
 
@@ -371,9 +337,9 @@ function AmbientFilm({ src, poster, alt, className }) {
     if (!el) return undefined
     if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') return undefined
     const io = new IntersectionObserver(
-      // Same stale-batch guard as MediaTile: act on the LAST entry, because
-      // the callback may deliver several queued transitions at once and the
-      // first can be an outdated "not intersecting".
+      // Stale-batch guard: act on the LAST entry, because the callback may
+      // deliver several queued transitions at once and the first can be an
+      // outdated "not intersecting".
       (entries) => {
         const e = entries[entries.length - 1]
         if (e.isIntersecting) el.play?.().catch(() => {})
@@ -407,6 +373,19 @@ export default function Landing() {
     document.title = `${PRODUCT} — No One Gets Left Behind`
     return () => { document.title = prevTitle }
   }, [])
+
+  // Parallax surfaces — the four full-bleed cover images/films that live
+  // inside overflow:hidden frames. Only those: parallaxing TEXT makes a page
+  // feel broken (copy must stay glued to the scroll), and the community film
+  // wall is excluded because the 30s film has native controls — a moving
+  // scrub bar under a thumb is a miss.
+  //
+  // The hero gets a touch more speed than the photo bands: it is the one
+  // place the visitor pauses, and it sets the depth vocabulary for the rest.
+  const heroFilmRef = useParallax(0.1, 1.12)
+  const shopImgRef = useParallax(0.07, 1.1)
+  const creedVestRef = useParallax(0.07, 1.1)
+  const creedSupportRef = useParallax(0.07, 1.1)
 
   return (
     <div className="tp">
@@ -623,6 +602,11 @@ export default function Landing() {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          /* Parallax surface (see useParallax): pre-promote to its own
+             compositor layer so the first transform write doesn't trigger
+             a repaint mid-scroll. Only the four drift surfaces get this —
+             will-change on everything is how you run out of VRAM on phones. */
+          will-change: transform;
           /* The 16:9 source has the runner centred with sky above — biasing
              the crop window upward keeps her face in frame when the section
              is shorter than the file's natural cover height. */
@@ -935,14 +919,16 @@ export default function Landing() {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          will-change: transform; /* parallax surface — see useParallax */
         }
         /* Both sources are tall portraits dropped into landscape frames, so
            cover() discards most of the vertical extent and the default centre
            crop lands on the wrong thing. These two numbers are the whole point
-           of each photograph: 76% puts the printed line in frame instead of
-           slicing it in half, 32% keeps the two runners' faces rather than
+           of each photograph: 30% keeps Hermen and the runner's faces and the
+           linked arms in frame (the subjects sit in the upper third of the
+           marathon photo), 32% keeps the two runners' faces rather than
            their shoulders. */
-        .tp-creed__img--creed { object-position: 50% 76%; }
+        .tp-creed__img--creed { object-position: 50% 30%; }
         .tp-creed__img--support { object-position: 50% 32%; }
         .tp-creed__copy {
           padding: clamp(48px, 6vw, 92px) clamp(24px, 4vw, 56px);
@@ -1037,16 +1023,26 @@ export default function Landing() {
         .tp-shop {
           background: var(--tp-slab);
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          /* The photo column is narrower than the copy column on purpose:
+             a portrait frame at a full half of a wide screen becomes a
+             tower that dwarfs the copy beside it. 0.9/1.1 keeps the band
+             balanced while the frame stays clearly upright. */
+          grid-template-columns: minmax(0, 0.9fr) 1.1fr;
           align-items: stretch;
         }
-        /* Same absolutely-positioned frame trick as .tp-creed above: a
-           stretched grid item cannot derive its height from a row whose height
-           depends on it, so the photo is taken out of flow and the copy column
-           is left as the only thing with an opinion about the band's height. */
+        /* PORTRAIT at the club's instruction ("the shop picture should be
+           portrait not landscape"). Unlike the creed frames, this one is NOT
+           height-matched to the copy — it declares its own 4:5 shape and the
+           band grows to fit it, because the source photograph is an upright
+           1290×2796 shot and a landscape crop reduced it to a torso strip.
+           4:5 rather than the source's own 1:2.17: the full file is mostly
+           sky and road, and 4:5 is the tall-crop convention the club's own
+           Instagram grid uses. The img inside still fills absolutely, so the
+           parallax overscan keeps working unchanged. */
         .tp-shop__frame {
           position: relative;
           overflow: hidden;
+          aspect-ratio: 4 / 5;
           min-height: 420px;
         }
         .tp-shop__img {
@@ -1056,11 +1052,12 @@ export default function Landing() {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          /* Same tall-portrait-in-a-landscape-frame problem as the creed band:
-             centre-cropping slices the printed line in half. 68% still clipped
-             the descender of "BEHIND" against the bottom edge; 74% shows the
-             lower slice of the source and lands the full lockup in frame. */
-          object-position: 50% 74%;
+          will-change: transform; /* parallax surface — see useParallax */
+          /* The 4:5 frame shows ~58% of the source's height in one window.
+             Centring that window at 55% spans roughly 26%–84% of the photo:
+             the creed + MADE lockup (~48–62%) sits whole in the lower half
+             with the tram still readable above it. */
+          object-position: 50% 55%;
         }
         .tp-shop__copy {
           padding: clamp(48px, 6vw, 92px) clamp(24px, 5vw, 72px);
@@ -1100,7 +1097,11 @@ export default function Landing() {
         }
         @media (max-width: 860px) {
           .tp-shop { grid-template-columns: 1fr; }
-          .tp-shop__frame { min-height: 0; height: 46vh; max-height: 360px; }
+          /* Stacked: the frame keeps its upright shape instead of the old
+             46vh landscape letterbox — the whole point of the change. 4:5 at
+             full phone width (~390px → ~487px tall) stays inside one screen
+             with room for the headline above the fold of the band. */
+          .tp-shop__frame { min-height: 0; height: auto; aspect-ratio: 4 / 5; }
         }
 
 /* ── 5. Generic section shell ─────────── */
@@ -1368,183 +1369,60 @@ export default function Landing() {
         }
         .tp-ugc__sub { font-size: 0.98rem; line-height: 1.6; color: var(--muted); margin: 0; }
         .tp-ugc__sub strong { color: var(--ink); font-weight: 600; }
-        .tp-ugc__grid {
-          display: grid;
-          grid-template-columns: repeat(6, 1fr);
-          grid-auto-rows: clamp(56px, 6.5vw, 92px);
-          grid-auto-flow: dense;
-          gap: 10px;
-        }
-        .tp-ugc__tile {
-          position: relative;
-          overflow: hidden;
-          border-radius: 14px;
-          background: var(--surface-2);
-          grid-row: span 2;              /* small: 1 col × 2 rows */
-        }
-        .tp-ugc__tile--big {
-          grid-column: span 2;
-          grid-row: span 4;              /* big: 2 col × 4 rows (tall hero) */
-        }
-        .tp-ugc__tile--wide {
-          grid-column: span 2;
-          grid-row: span 2;              /* wide: 2 col × 2 rows */
-        }
-        .tp-ugc__media {
+        /* Three club films instead of the old photo mosaic — the club's
+           instruction: "display those on the Run It, Share It section and
+           replace the existing content there." Two of the three are
+           PORTRAIT (the 30s film with sound, and the corporate film —
+           its .MOV carries rotation=-90, so despite a 3840×2160 stream it
+           displays 9:16). Only the wide loop is landscape. So the wall is:
+           the landscape loop as a full-width cinematic banner on top, the
+           two portraits side by side beneath it at phone-screen width.
+           Forcing the corporate film into a landscape slot is what broke
+           the first layout (the grid ballooned to ~2700px tall). */
+        .tp-ugc__films { display: grid; gap: 14px; }
+        .tp-ugc__land {
           width: 100%;
-          height: 100%;
-          object-fit: cover;
           display: block;
-          transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        .tp-ugc__tile:hover .tp-ugc__media { transform: scale(1.05); }
-        /* Slow, barely-there drift so the poster tiles feel alive before a
-           real video is dropped in. transform-origin sits high so faces
-           stay in frame as it zooms. */
-        .tp-ugc__media--kb {
-          animation: tp-ugc-kb 22s ease-in-out infinite alternate;
-          transform-origin: 50% 38%;
-        }
-        @keyframes tp-ugc-kb { from { transform: scale(1); } to { transform: scale(1.09); } }
-        .tp-ugc__badge {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          display: grid;
-          place-items: center;
-          color: #fff;
-          background: rgba(0, 0, 0, 0.52);
-          -webkit-backdrop-filter: blur(4px);
-          backdrop-filter: blur(4px);
-        }
-        .tp-ugc__tag {
-          position: absolute;
-          left: 12px;
-          bottom: 12px;
-          font-size: 0.64rem;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          font-weight: 600;
-          color: #fff;
-          background: rgba(0, 0, 0, 0.58);
-          -webkit-backdrop-filter: blur(4px);
-          backdrop-filter: blur(4px);
-          padding: 3px 9px;
-          border-radius: 999px;
-        }
-        .tp-ugc__tile--slot {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          text-align: center;
-          padding: 12px;
-          background: var(--surface-2);
-          border: 1px dashed var(--line);
-        }
-        .tp-ugc__slotmark {
-          width: 34px;
-          height: 34px;
-          border-radius: 9px;
-          background: var(--accent);
-          color: var(--accent-contrast);
-          display: grid;
-          place-items: center;
-          font-family: var(--font-display);
-          font-weight: 700;
-          font-size: 1rem;
-        }
-        .tp-ugc__slottext { font-size: 0.8rem; font-weight: 600; color: var(--ink); line-height: 1.2; }
-        .tp-ugc__slothint { font-size: 0.68rem; color: var(--muted); }
-        @media (max-width: 640px) {
-          /* Re-tiled for the thumb, not shrunk: 2 columns, the tall heroes
-             become full-bleed portrait bands, smalls pair up between them.
-             Row math stays gapless: 3×(2×3) + 4×(1×2) + 1×(2×2) fills
-             2 columns exactly. */
-          .tp-ugc__grid {
-            grid-template-columns: repeat(2, 1fr);
-            grid-auto-rows: clamp(64px, 18vw, 92px);
-            gap: 8px;
-          }
-          .tp-ugc__tile { grid-row: span 2; }
-          .tp-ugc__tile--big { grid-column: span 2; grid-row: span 3; }
-          .tp-ugc__tile--wide { grid-column: span 2; grid-row: span 2; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .tp-ugc__media--kb { animation: none; }
-          .tp-ugc__tile:hover .tp-ugc__media { transform: none; }
-        }
-
-        /* ── 7a. Club films band ─────────────────────────────────
-           Dark slab so the films glow the way they do on a phone at
-           night. One row, two frames: the landscape ambient loop takes
-           the width, the portrait film stands beside it at true 9:16.
-           The row's height is set by the portrait frame; the landscape
-           film covers its box (crops a little at the sides — it is
-           atmosphere, not testimony). */
-        .tp-films {
-          background: var(--tp-slab);
-          padding: 96px 24px;
-        }
-        .tp-films__head { max-width: 1060px; margin: 0 auto 40px; }
-        .tp-films__title {
-          font-family: var(--font-display);
-          font-size: clamp(1.7rem, 3.4vw, 2.4rem);
-          font-weight: 700;
-          letter-spacing: -0.01em;
-          color: #fff;
-          margin: 0;
-        }
-        .tp-films__sub {
-          margin: 10px 0 0;
-          font-size: 0.95rem;
-          color: rgba(255,255,255,0.55);
-          max-width: 56ch;
-        }
-        .tp-films__grid {
-          max-width: 1060px;
-          margin: 0 auto;
-          display: grid;
-          grid-template-columns: 1fr minmax(240px, 300px);
-          gap: 16px;
-          align-items: stretch;
-        }
-        .tp-films__wide, .tp-films__tall {
-          width: 100%;
-          height: 100%;
-          display: block;
+          /* 21:9, not 16:9: as a banner it is atmosphere, and the shallower
+             strip keeps the whole wall on one screen next to two 9:16
+             towers. The source is 16:9 so object-fit crops top/bottom. */
+          aspect-ratio: 21 / 9;
           border-radius: 14px;
           background: #000;
           object-fit: cover;
         }
-        .tp-films__tall { aspect-ratio: 9 / 16; }
-        @media (max-width: 860px) {
-          .tp-films { padding: 64px 16px; }
-          .tp-films__grid { grid-template-columns: 1fr; }
-          /* Stacked: the landscape loop keeps its own shape instead of
-             inheriting the portrait row height… */
-          .tp-films__wide { aspect-ratio: 16 / 9; height: auto; }
-          /* …and the portrait film centres at phone-screen width rather
-             than blowing up to a full-bleed 9:16 tower. */
-          .tp-films__tall { max-width: 320px; margin: 0 auto; height: auto; }
+        .tp-ugc__pair {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 320px));
+          justify-content: center;
+          gap: 14px;
         }
+        .tp-ugc__tall {
+          width: 100%;
+          display: block;
+          aspect-ratio: 9 / 16;
+          border-radius: 14px;
+          background: #000;
+          object-fit: cover;
+        }
+        @media (max-width: 640px) {
+          /* A 21:9 strip at 360px wide is a ribbon — give the banner its
+             native shape back on phones. */
+          .tp-ugc__land { aspect-ratio: 16 / 9; }
+          /* Side-by-side portraits at ~170px each would shrink the sound
+             film's controls below tappable size; stack them centred. */
+          .tp-ugc__pair { grid-template-columns: minmax(0, 320px); }
+        }
+
       `}</style>
 
       {/* ── 1. Sticky nav ─────────────────────────────────────── */}
+      {/* The wordmark sits on the RIGHT of the bar at the club's instruction
+          ("the logo should be displayed on top right side") — so the actions
+          take the left slot. The bar is space-between, so this is purely a
+          swap of which child comes first; the 430px budget in the media
+          query below is unchanged, just mirrored. */}
       <header className="tp-nav">
-        <Link to="/" className="tp-nav__brand">
-          {/* Cream sticky nav → BLACK wordmark. The alt names the club for
-              screen readers since the link otherwise loses its visible text
-              when the logo art renders. */}
-          <BrandLogo on="light" height={20} alt={`${PRODUCT} — home`}>
-            <span className="tp-nav__mark">{PRODUCT_MARK}</span>
-            {PRODUCT}
-          </BrandLogo>
-        </Link>
         <nav className="tp-nav__actions">
           {/* Both used to enter through the /start door-chooser. Now that the
               hero cards go straight to /login, a button labelled "Log in" that
@@ -1556,6 +1434,18 @@ export default function Landing() {
             Get started <ArrowRight size={13} />
           </Link>
         </nav>
+        <Link to="/" className="tp-nav__brand">
+          {/* This nav sits on the near-black landing page (bg #0a0a0a), so
+              the surface is DARK and the wordmark must be the WHITE file —
+              the previous on="light" put the black PNG on a black bar and
+              the logo was invisible. The alt names the club for screen
+              readers since the link loses its visible text when the logo
+              art renders. */}
+          <BrandLogo on="dark" height={20} alt={`${PRODUCT} — home`}>
+            <span className="tp-nav__mark">{PRODUCT_MARK}</span>
+            {PRODUCT}
+          </BrandLogo>
+        </Link>
       </header>
 
       {/* ── 2. Hero ───────────────────────────────────────────── */}
@@ -1566,6 +1456,7 @@ export default function Landing() {
             Muted + playsInline are what allow autoplay at all on iOS; under
             prefers-reduced-motion we never autoplay and the poster stays. */}
         <video
+          ref={heroFilmRef}
           className="tp-hero__film"
           src="/video/made-hero.mp4"
           poster="/img/hero-crew-1100.jpg"
@@ -1768,14 +1659,20 @@ export default function Landing() {
           lookbook image at /img/shop-*.jpg and only the <img> changes. */}
       <section className="tp-shop" id="shop">
         <div className="tp-shop__frame">
+          {/* The club's own lookbook shot (the "Made running Shop" photo they
+              supplied): the hoodie with the creed on the back, Metrolink tram
+              behind — Manchester in one frame. Replaces the vest crop at the
+              club's instruction. Native width is 1290px, so no variant claims
+              more pixels than the source actually has. */}
           <img
+            ref={shopImgRef}
             className="tp-shop__img"
-            src="/img/creed-vest-1600.jpg"
-            srcSet="/img/creed-vest-900.jpg 720w, /img/creed-vest-1600.jpg 1280w"
+            src="/img/shop-hoodie-1290.jpg"
+            srcSet="/img/shop-hoodie-900.jpg 900w, /img/shop-hoodie-1290.jpg 1290w"
             sizes="(max-width: 860px) 100vw, 45vw"
             loading="lazy"
             decoding="async"
-            alt="A Made Running vest, printed with No One Gets Left Behind."
+            alt="A Made Running hoodie printed with No One Gets Left Behind, in front of a Manchester tram."
           />
         </div>
         <Reveal className="tp-shop__copy" as="div">
@@ -1796,59 +1693,49 @@ export default function Landing() {
         </Reveal>
       </section>
 
-      {/* ── 7. Community media wall ───────────────────────────────
-          The Lululemon "Wear It. Share It." move, in Made Running's voice.
-          A video-native mosaic: every tile upgrades to a live autoplay-in-
-          view <video> the moment a file is dropped at its `video` path;
-          until then it shows the club's own reel-cover photos and branded
-          "tag us" slots. Proof that the members make the brand. */}
+      {/* ── 7. Community film wall ────────────────────────────────
+          "Run It. Share It." now carries the club's own three films (the
+          "Made running homepage videos" folder, transcoded to H.264 so
+          every browser plays them) — they replaced the old photo mosaic
+          at the club's instruction. The landscape loop is the banner; the
+          two portrait films sit beneath it. Corporate is ambience — muted,
+          playing only while on screen. The 30-second film has sound, so it
+          waits for a tap: controls, poster, preload="none" — zero cost
+          until someone chooses it. */}
       <section className="tp-ugc" aria-labelledby="ugc-title">
         <Reveal className="tp-ugc__head" as="div">
           <div className="tp-eyebrow">The community</div>
           <h2 className="tp-ugc__title" id="ugc-title">Run It. Share It.</h2>
           <p className="tp-ugc__sub">
-            Tag <strong>@made.running</strong> or use <strong>#NoOneGetsLeftBehind</strong> to be featured on the wall.
+            Shot on the runs and in the Hub. The tall one has sound &mdash;
+            press play. Tag <strong>@made.running</strong> or{' '}
+            <strong>#NoOneGetsLeftBehind</strong> to be featured.
           </p>
         </Reveal>
-        <Reveal className="tp-ugc__grid" as="div">
-          {COMMUNITY_MEDIA.map((item, i) => (
-            <MediaTile key={i} item={item} />
-          ))}
-        </Reveal>
-      </section>
-
-      {/* ── 7a. Club films ────────────────────────────────────────
-          The club's own two films (from the "Made running videos" folder,
-          transcoded to H.264 so every browser plays them). The landscape
-          one is a six-second ambient loop — plays muted while in view,
-          exactly like the wall tiles above. The portrait one is the real
-          30-second film with sound, so it waits for a tap: controls,
-          poster, preload="none" — zero cost until someone chooses it. */}
-      <section className="tp-films" aria-labelledby="films-title">
-        <Reveal className="tp-films__head" as="div">
-          <div className="tp-eyebrow">The club on film</div>
-          <h2 className="tp-films__title" id="films-title">Watch us move.</h2>
-          <p className="tp-films__sub">
-            Shot by the community, on the runs and in the Hub. Press play on
-            the second one — it has sound.
-          </p>
-        </Reveal>
-        <Reveal className="tp-films__grid" as="div">
+        <Reveal className="tp-ugc__films" as="div">
           <AmbientFilm
-            className="tp-films__wide"
+            className="tp-ugc__land"
             src="/video/made-film-wide.mp4"
             poster="/video/made-film-wide-poster.jpg"
             alt="Made Running film: the crew out on a run."
           />
-          <video
-            className="tp-films__tall"
-            src="/video/made-film-tall.mp4"
-            poster="/video/made-film-tall-poster.jpg"
-            controls
-            playsInline
-            preload="none"
-            aria-label="Made Running film with sound: thirty seconds inside the club."
-          />
+          <div className="tp-ugc__pair">
+            <AmbientFilm
+              className="tp-ugc__tall"
+              src="/video/made-corporate.mp4"
+              poster="/video/made-corporate-poster.jpg"
+              alt="Made Running brand film."
+            />
+            <video
+              className="tp-ugc__tall"
+              src="/video/made-film-tall.mp4"
+              poster="/video/made-film-tall-poster.jpg"
+              controls
+              playsInline
+              preload="none"
+              aria-label="Made Running film with sound: thirty seconds inside the club."
+            />
+          </div>
         </Reveal>
       </section>
 
@@ -1858,14 +1745,19 @@ export default function Landing() {
           the one rule that explains why they keep showing up. */}
       <section className="tp-creed">
         <div className="tp-creed__frame">
+          {/* Swapped from the creed-vest photo at the club's instruction
+              (Oct 2026): Hermen pacing a Manchester Marathon runner to the
+              line, arm in arm — the creed as an action instead of a print.
+              Native width is 1205px, so no variant claims more. */}
           <img
+            ref={creedVestRef}
             className="tp-creed__img tp-creed__img--creed"
-            src="/img/creed-vest-1600.jpg"
-            srcSet="/img/creed-vest-900.jpg 720w, /img/creed-vest-1600.jpg 1280w"
+            src="/img/hermen-gail-1205.jpg"
+            srcSet="/img/hermen-gail-900.jpg 900w, /img/hermen-gail-1205.jpg 1205w"
             sizes="(max-width: 860px) 100vw, 30vw"
             loading="lazy"
             decoding="async"
-            alt="The back of a Made Running race vest reading No One Gets Left Behind."
+            alt="A Made Running coach walking arm in arm with a Manchester Marathon runner, both checking her watch."
           />
         </div>
         <Reveal className="tp-creed__copy" as="div">
@@ -1897,6 +1789,7 @@ export default function Landing() {
         </Reveal>
         <div className="tp-creed__frame tp-creed__frame--second">
           <img
+            ref={creedSupportRef}
             className="tp-creed__img tp-creed__img--support"
             src="/img/support-1600.jpg"
             srcSet="/img/support-900.jpg 726w, /img/support-1600.jpg 1290w"

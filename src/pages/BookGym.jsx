@@ -543,11 +543,35 @@ export default function BookGym() {
 
     // Fallback: the sheet's own instruction. Honest about not being a
     // confirmed seat, rather than faking one.
+    //
+    // 'Pay online' STILL works down here. The checkout endpoint prices the
+    // class itself from a server-side constant and touches no database —
+    // only the seat reservation is lost when Supabase is unreachable, not
+    // the club's Square account. The bookingId it wants is purely an
+    // idempotency key, so a browser-generated UUID stands in for the
+    // booking record that could not be written. Without this, a member who
+    // explicitly chose "pay online" was told "the club will send you a
+    // payment link" — a promise nobody could keep, because with no database
+    // there is no record to send a link FOR.
+    const offlinePlaces = bookedFor === 'group' ? places : 1
+    const offlinePayUrl =
+      method === 'online'
+        ? await fetchClassPayLink({
+            bookingId:
+              typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `offline-${Date.now()}`,
+            title: active.title,
+            places: offlinePlaces,
+            email: email.trim() || undefined,
+          })
+        : null
     setDone({
       title: active.title, live: false,
-      places: bookedFor === 'group' ? places : 1,
+      places: offlinePlaces,
       payMethod: method,
-      total: priceOf(active) * (bookedFor === 'group' ? places : 1),
+      total: priceOf(active) * offlinePlaces,
+      payUrl: offlinePayUrl,
     })
     setActive(null)
     setBusy(false)
