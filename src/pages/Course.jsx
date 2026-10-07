@@ -3,6 +3,7 @@ import { ArrowLeft, Play } from 'lucide-react'
 import { Empty } from '../components/ui'
 import { getProgram } from '../lib/academy'
 import { tenant } from '../lib/theme'
+import BrandLogo from '../components/BrandLogo'
 
 // ── Lesson video ─────────────────────────────────────────────────────
 // Every lesson in academy.js carries a `video` field. Until a lesson is
@@ -53,6 +54,10 @@ const lessonVideoCss = `
   letter-spacing: 0.06em;
   color: rgba(255,255,255,0.38);
 }
+/* The real wordmark replaces the text mark at the same visual weight: the
+   text was white at 38% — the white PNG gets the same treatment so it stays
+   a watermark, not a billboard, inside the fake player. */
+.lv__mark img { opacity: 0.45; }
 .lv__play {
   width: 58px;
   height: 58px;
@@ -111,7 +116,11 @@ function LessonVideo({ lesson, index }) {
     <figure className="lv" style={{ margin: 0 }}>
       <div className="lv__frame">
         <div className="lv__mark" aria-hidden="true">
-          {tenant.mark}
+          {/* Watermark corner of the fake player — small and faded like the
+              text mark it replaces (.lv__mark img rule dims it to match). */}
+          <BrandLogo on="dark" height={14} alt="">
+            {tenant.mark}
+          </BrandLogo>
         </div>
         <div className="lv__play" aria-hidden="true">
           <Play size={22} fill="currentColor" strokeWidth={0} style={{ marginLeft: 3 }} />

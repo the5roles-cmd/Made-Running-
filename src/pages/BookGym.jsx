@@ -46,6 +46,7 @@ import {
 } from 'lucide-react'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { tenant } from '../lib/theme'
+import BrandLogo from '../components/BrandLogo'
 import { useAuth } from '../auth/AuthProvider'
 import {
   classesByDay,
@@ -453,13 +454,21 @@ export default function BookGym() {
         // place in a class that had already turned them down. That is worse
         // than any error message.
         //
-        // PGRST202 means the function itself is not in the database yet,
-        // which is a deployment state, not something the visitor did. That
-        // one alone still falls through to the honest "we have your request"
-        // screen. Every other error is reported, because faking a booking
-        // to hide a network problem sends someone to a class expecting them.
+        // PGRST202 means the function itself is not in the database yet.
+        // An error with NO code is the other deployment state: the Supabase
+        // host did not answer at all (project paused or not yet created), so
+        // supabase-js surfaces a bare fetch failure instead of a PostgREST
+        // error. Both are states of OUR infrastructure, not something the
+        // visitor did — both fall through to the honest "we have your
+        // request" screen, which never claims a confirmed seat.
+        //
+        // Every error that carries any OTHER code came from a database that
+        // IS answering, and those are reported: a reachable database that
+        // errors on a booking is a refusal we must not paper over, because
+        // faking a booking sends someone to a class expecting them.
         if (error) {
-          if (error.code !== 'PGRST202') {
+          const dbUnreachable = error.code === 'PGRST202' || !error.code
+          if (!dbUnreachable) {
             setFormErr(
               'We could not reach the booking system just then. ' +
               'Please try again in a moment.'
@@ -551,8 +560,12 @@ export default function BookGym() {
       {/* ── Header ──────────────────────────────────────────────── */}
       <header className="bk__hero">
         <Link to="/" className="bk__lockup" aria-label={`${tenant.name} — back to home`}>
-          <span className="bk__mark">{tenant.mark}</span>
-          <span className="bk__wordmark">{tenant.name}</span>
+          {/* Dark hero (#141414) → white wordmark. alt="" — the Link above
+              already announces the club and the destination. */}
+          <BrandLogo on="dark" height={24} alt="">
+            <span className="bk__mark">{tenant.mark}</span>
+            <span className="bk__wordmark">{tenant.name}</span>
+          </BrandLogo>
         </Link>
         <p className="bk__eyebrow">The Hub</p>
         <h1 className="bk__title">Class timetable</h1>

@@ -95,10 +95,9 @@ export const HUB_CLASSES = [
     title: 'HIIT',
     coach: 'Hermen',
     discipline: 'hiit',
-    // PDF: "(starting back next week)". Shown on the timetable but not
-    // bookable — hiding it would make members think it was cancelled.
-    paused: true,
-    pausedNote: 'Starting back next week',
+    // Was seeded paused — the PDF said "(starting back next week)". The
+    // club confirmed it is running again (Oct 2026), so the paused flag is
+    // gone and the card books like any other.
   },
   {
     id: 'tue-1830-catch-a-circuit',

@@ -34,6 +34,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { CalendarDays, MapPin, Pause, Star, Venus } from 'lucide-react'
 
 import { tenant } from '../lib/theme'
+import BrandLogo from '../components/BrandLogo'
 import { classPath, fmtRecurrence, ratingCopy, usePublicCoaches } from '../lib/classes'
 
 // Initials for a coach with no photo.
@@ -102,8 +103,12 @@ export default function Coaches() {
 
       <header className="co__hero">
         <Link to="/" className="co__lockup" aria-label={`${tenant.name} — back to home`}>
-          <span className="co__mark">{tenant.mark}</span>
-          <span className="co__wordmark">{tenant.name}</span>
+          {/* Dark hero (#141414) → white wordmark. alt="" — the Link above
+              already announces the club and the destination. */}
+          <BrandLogo on="dark" height={24} alt="">
+            <span className="co__mark">{tenant.mark}</span>
+            <span className="co__wordmark">{tenant.name}</span>
+          </BrandLogo>
         </Link>
       </header>
 

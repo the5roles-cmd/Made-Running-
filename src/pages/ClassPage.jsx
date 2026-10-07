@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 
 import { tenant } from '../lib/theme'
+import BrandLogo from '../components/BrandLogo'
 import {
   coachNameOf, coachPath, dayNumber, fmtClockFromStamp, fmtDayDate, fmtPrice,
   fmtTime, dayLabel, monthKey, monthLabel, ratingCopy, relativeWhen, stateCopy,
@@ -988,8 +989,12 @@ function Shell({ children }) {
       <style>{CLASS_CSS + SHARE_CSS}</style>
       <header className="cp__hero">
         <Link to="/" className="cp__lockup" aria-label={`${tenant.name} — back to home`}>
-          <span className="cp__mark">{tenant.mark}</span>
-          <span className="cp__wordmark">{tenant.name}</span>
+          {/* Dark hero (#141414) → white wordmark. alt="" — the Link above
+              already announces the club and the destination. */}
+          <BrandLogo on="dark" height={24} alt="">
+            <span className="cp__mark">{tenant.mark}</span>
+            <span className="cp__wordmark">{tenant.name}</span>
+          </BrandLogo>
         </Link>
       </header>
       <main className="cp__wrap">{children}</main>

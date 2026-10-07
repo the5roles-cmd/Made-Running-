@@ -15,6 +15,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { tenant } from '../lib/theme'
+import BrandLogo from '../components/BrandLogo'
 
 // The signature move: a hand-drawn underline under each path label. Solid
 // for the runner (the open, public door), hairline for the coach (the
@@ -105,10 +106,18 @@ const PATHS = [
     blurb: 'HIIT, strength and spin at the Hub — live seats, pay online.',
     meta: 'Instant booking',
   },
-  // The Shop door sat last here. It was an external maderunning.com link,
-  // then the club's own /shop storefront, and is now removed entirely —
-  // the club disabled the shop (see the note in App.jsx). Four doors until
-  // it reopens.
+  // The Shop door is back, but DEAD — the club asked for the button to be
+  // visible again while the shop stays disabled (Oct 2026). `disabled: true`
+  // renders a non-interactive card: no href, no onClick, no "last time"
+  // memory. When the shop reopens, drop the flag and give it a real `to`.
+  {
+    key: 'shop',
+    disabled: true,
+    label: 'Shop the Kit',
+    variant: 'hairline',
+    blurb: 'Made Running kit and club colours.',
+    meta: 'Coming soon',
+  },
 ]
 
 const LAST_PATH_KEY = 'mr.lastPath'
@@ -330,6 +339,18 @@ export default function ChoosePath() {
           animation: cp-rise 360ms var(--ease) backwards;
           animation-delay: calc(560ms + var(--i) * 80ms);
         }
+        /* The dead Shop door: keeps its place in the grid and its entrance
+           animation, but reads as waiting, not clickable — dimmed, default
+           cursor, and exempt from the hover lift below. */
+        .cp-option--soon {
+          opacity: 0.5;
+          cursor: default;
+        }
+        .cp-option--soon:hover {
+          transform: none;
+          border-color: rgba(255,255,255,0.14);
+          background: rgba(255,255,255,0.02);
+        }
         .cp-option:hover {
           transform: translateY(-2px);
           border-color: rgba(255,255,255,0.42);
@@ -501,7 +522,16 @@ export default function ChoosePath() {
       `}</style>
 
       <main className="cp-card cp-in">
-        <div className="cp-mark" aria-hidden="true">{tenant.mark}</div>
+        {/* The AnimatedTitle below is this screen's signature and stays, so
+            the logo here is decoration above it (aria-hidden wrapper), not a
+            replacement for the name. Dark card → white wordmark. */}
+        <div aria-hidden="true" style={{ display: 'grid', placeItems: 'center', marginBottom: 'var(--s5)' }}>
+          <BrandLogo on="dark" height={36} alt="">
+            {/* margin:0 — the wrapper above owns the spacing now, and the
+                class's own `margin: 0 auto var(--s5)` would double it. */}
+            <div className="cp-mark" style={{ margin: 0 }}>{tenant.mark}</div>
+          </BrandLogo>
+        </div>
         <AnimatedTitle text={tenant.name} />
 
         <div className="cp-rule" />
@@ -536,6 +566,21 @@ export default function ChoosePath() {
               </>
             )
             const cls = 'cp-option' + (isLast ? ' cp-option--last' : '')
+            // The dead Shop door: a <div>, not a link — nothing to follow,
+            // nothing to remember. aria-disabled tells screen readers what
+            // the muted styling tells everyone else.
+            if (p.disabled) {
+              return (
+                <div
+                  key={id}
+                  style={{ '--i': i }}
+                  className={cls + ' cp-option--soon'}
+                  aria-disabled="true"
+                >
+                  {inner}
+                </div>
+              )
+            }
             return p.external ? (
               <a
                 key={id}

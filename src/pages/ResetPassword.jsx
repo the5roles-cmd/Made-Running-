@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { tenant } from '../lib/theme'
+import BrandLogo from '../components/BrandLogo'
 
 export default function ResetPassword() {
   const { session, loading, updatePassword, supabaseConfigured } = useAuth()
@@ -101,33 +102,40 @@ export default function ResetPassword() {
             marginBottom: 'var(--s7)',
           }}
         >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'var(--accent)',
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 'var(--fs-lg)',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-            }}
-          >
-            {tenant.mark}
-          </div>
-          <h1
-            className="display"
-            style={{
-              fontSize: 'var(--fs-xl)',
-              letterSpacing: '-0.015em',
-              color: 'var(--ink)',
-              margin: 0,
-              textAlign: 'center',
-            }}
-          >
-            {tenant.name}
+          {/* Same treatment as /login (this page mirrors it on purpose): the
+              h1 wraps the lockup, the wordmark replaces badge + name when the
+              tenant has logo art, and the fallback uses spans only — the one
+              element family an h1 may legally contain. */}
+          <h1 className="display" style={{ margin: 0, textAlign: 'center' }}>
+            <BrandLogo on="light" height={44} alt={tenant.name}>
+              <span
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  display: 'inline-grid',
+                  placeItems: 'center',
+                  fontSize: 'var(--fs-lg)',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                }}
+              >
+                {tenant.mark}
+              </span>
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: 'var(--fs-xl)',
+                  letterSpacing: '-0.015em',
+                  color: 'var(--ink)',
+                  marginTop: 'var(--s3)',
+                }}
+              >
+                {tenant.name}
+              </span>
+            </BrandLogo>
           </h1>
         </div>
 

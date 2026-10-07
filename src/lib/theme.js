@@ -61,6 +61,16 @@ export const TENANTS = {
     mark: 'M',
     tagline: 'No One Gets Left Behind.',
     industry: 'Running community',
+    // The club's real wordmark (from MADE-Logo-Black-noTM.png), one file
+    // per surface tone. Only this tenant has them: every lockup renders
+    // through <BrandLogo>, which falls back to the mark + name text for
+    // tenants without logo art — so the template stays re-skinnable by
+    // adding two files, not by touching ten headers.
+    logoOnLight: '/img/made-logo-black.png',
+    logoOnDark: '/img/made-logo-white.png',
+    // The PNGs are 960×314, so every <img> can state width/height and
+    // reserve its box before the file arrives (no layout shift).
+    logoRatio: 960 / 314,
   },
 }
 

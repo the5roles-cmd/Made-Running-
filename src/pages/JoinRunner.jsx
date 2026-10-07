@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { tenant } from '../lib/theme'
+import BrandLogo from '../components/BrandLogo'
 
 // Parse and sanitise the ?ref= query param from the invite URL.
 // Stored as a tags entry (e.g. "ref:ABC123") rather than a new column because
@@ -129,22 +130,27 @@ export default function JoinRunner() {
             marginBottom: 'var(--s7)',
           }}
         >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'var(--accent)',
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 'var(--fs-lg)',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-            }}
-          >
-            {tenant.mark}
-          </div>
+          {/* Unlike /login, the h1 here says "Join {name}" — real words, not
+              just the brand — so it stays as text and the logo above it is
+              purely decorative (alt=""): the heading already names the club. */}
+          <BrandLogo on="light" height={36} alt="">
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: 'var(--accent)',
+                color: '#fff',
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: 'var(--fs-lg)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+              }}
+            >
+              {tenant.mark}
+            </div>
+          </BrandLogo>
           <h1
             className="display"
             style={{

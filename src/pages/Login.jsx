@@ -6,6 +6,7 @@ import { supabase, supabaseConfigured, friendlyError } from '../lib/supabase'
 import { safeNext } from '../lib/authNext'
 import { REGISTRATION_OPEN } from '../lib/registration'
 import { tenant } from '../lib/theme'
+import BrandLogo from '../components/BrandLogo'
 import SetupNotice from '../components/SetupNotice'
 
 // A button that reads as a link. It has to be a <button>, not an <a>: these
@@ -241,33 +242,42 @@ export default function Login() {
             marginBottom: 'var(--s7)',
           }}
         >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'var(--accent)',
-              color: '#fff',
-              display: 'grid',
-              placeItems: 'center',
-              fontSize: 'var(--fs-lg)',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-            }}
-          >
-            {tenant.mark}
-          </div>
-          <h1
-            className="display"
-            style={{
-              fontSize: 'var(--fs-xl)',
-              letterSpacing: '-0.015em',
-              color: 'var(--ink)',
-              margin: 0,
-              textAlign: 'center',
-            }}
-          >
-            {tenant.name}
+          {/* The h1 wraps the lockup so the page keeps its heading whether
+              the logo art or the text fallback renders. The logo IS the
+              club's wordmark, so for tenants with art it replaces both the
+              badge and the name — rendering the name again under the
+              wordmark would say "Made Running" twice. Fallback children are
+              spans (never divs): phrasing content is all an h1 may contain. */}
+          <h1 className="display" style={{ margin: 0, textAlign: 'center' }}>
+            <BrandLogo on="light" height={44} alt={tenant.name}>
+              <span
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  display: 'inline-grid',
+                  placeItems: 'center',
+                  fontSize: 'var(--fs-lg)',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                }}
+              >
+                {tenant.mark}
+              </span>
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: 'var(--fs-xl)',
+                  letterSpacing: '-0.015em',
+                  color: 'var(--ink)',
+                  marginTop: 'var(--s3)',
+                }}
+              >
+                {tenant.name}
+              </span>
+            </BrandLogo>
           </h1>
           <p className="muted" style={{ fontSize: 'var(--fs-sm)', textAlign: 'center' }}>
             {tenant.tagline}

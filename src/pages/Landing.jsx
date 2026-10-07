@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { loginHref } from '../lib/authNext'
 import { REGISTRATION_OPEN } from '../lib/registration'
 import { InstagramMark } from '../components/BrandMarks'
+import BrandLogo from '../components/BrandLogo'
 import {
   ArrowRight,
   CheckCircle2,
@@ -211,9 +212,12 @@ const QUICK_PATHS = [
   // label. See src/lib/registration.js.
   { dest: '/join', label: 'I am a Runner', meta: SIGNIN_META },
   { dest: '/join', key: 'community', label: 'Join the Community', meta: 'Everyone welcome' },
-  // The Shop card sat third here — removed when the club disabled the shop
-  // (see the note in App.jsx). The row is four cards until it reopens; the
-  // section-6b band below keeps the kit visible but links nowhere.
+  // The Shop card is back, but DEAD — the club asked for the button to be
+  // visible again while the shop stays disabled (Oct 2026). `disabled: true`
+  // renders a <span>, never a link: there is no /shop route to point at, so
+  // an <a> here would walk people into the catch-all redirect and read as a
+  // bug. When the shop reopens, delete the flag and restore `dest`.
+  { key: 'shop', disabled: true, label: 'Shop the Kit', meta: 'Coming soon' },
   // The only card that does NOT go through /login, and the only one that is a
   // real <a href> rather than a <Link>.
   //
@@ -288,7 +292,12 @@ function MediaTile({ item }) {
     if (!el || !item.video) return undefined
     if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') return undefined
     const io = new IntersectionObserver(
-      ([e]) => {
+      // The callback can deliver SEVERAL queued entries after a fast scroll.
+      // Destructuring `([e])` reads the OLDEST one, so the video could pause
+      // on a stale "not intersecting" while it is plainly on screen. The
+      // last entry is the current truth.
+      (entries) => {
+        const e = entries[entries.length - 1]
         if (e.isIntersecting) el.play?.().catch(() => {})
         else el.pause?.()
       },
@@ -344,6 +353,50 @@ function MediaTile({ item }) {
       <span className="tp-ugc__slottext">{item.cta ? 'Add yours' : item.handle || '@made.running'}</span>
       <span className="tp-ugc__slothint">{item.cta ? 'Tag us to feature' : 'Your reel here'}</span>
     </div>
+  )
+}
+
+// The ambient half of the films band (section 7a): the club's 6-second
+// landscape film, muted, looping, playing ONLY while on screen — the same
+// play-in-view contract as the media wall above it, for the same battery
+// and data reasons. Under prefers-reduced-motion it never starts and the
+// poster frame stands in. The 30-second portrait film next to it is NOT
+// this component: it has audio worth hearing, so it renders a plain
+// <video controls preload="none"> and costs nothing until pressed.
+function AmbientFilm({ src, poster, alt, className }) {
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return undefined
+    if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') return undefined
+    const io = new IntersectionObserver(
+      // Same stale-batch guard as MediaTile: act on the LAST entry, because
+      // the callback may deliver several queued transitions at once and the
+      // first can be an outdated "not intersecting".
+      (entries) => {
+        const e = entries[entries.length - 1]
+        if (e.isIntersecting) el.play?.().catch(() => {})
+        else el.pause?.()
+      },
+      { threshold: 0.4 },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  return (
+    <video
+      ref={ref}
+      className={className}
+      src={src}
+      poster={poster}
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      aria-label={alt}
+    />
   )
 }
 
@@ -674,6 +727,20 @@ export default function Landing() {
         .tp-qcard:focus-visible {
           outline: 2px solid #ffffff;
           outline-offset: 2px;
+        }
+        /* The dead Shop card: present, legible, clearly not a door. Half
+           opacity and no hover lift are the whole message — "coming soon",
+           said with the card itself rather than a tooltip. */
+        .tp-qcard--soon {
+          opacity: 0.55;
+          cursor: default;
+        }
+        .tp-qcard--soon:hover {
+          /* Re-state the resting values so the generic .tp-qcard:hover
+             above cannot make a dead card glow like a live one. */
+          transform: none;
+          border-color: rgba(255,255,255,0.22);
+          background: rgba(14,13,12,0.45);
         }
         .tp-qcard__label {
           display: block;
@@ -1373,13 +1440,72 @@ export default function Landing() {
           .tp-ugc__media--kb { animation: none; }
           .tp-ugc__tile:hover .tp-ugc__media { transform: none; }
         }
+
+        /* ── 7a. Club films band ─────────────────────────────────
+           Dark slab so the films glow the way they do on a phone at
+           night. One row, two frames: the landscape ambient loop takes
+           the width, the portrait film stands beside it at true 9:16.
+           The row's height is set by the portrait frame; the landscape
+           film covers its box (crops a little at the sides — it is
+           atmosphere, not testimony). */
+        .tp-films {
+          background: var(--tp-slab);
+          padding: 96px 24px;
+        }
+        .tp-films__head { max-width: 1060px; margin: 0 auto 40px; }
+        .tp-films__title {
+          font-family: var(--font-display);
+          font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          color: #fff;
+          margin: 0;
+        }
+        .tp-films__sub {
+          margin: 10px 0 0;
+          font-size: 0.95rem;
+          color: rgba(255,255,255,0.55);
+          max-width: 56ch;
+        }
+        .tp-films__grid {
+          max-width: 1060px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 1fr minmax(240px, 300px);
+          gap: 16px;
+          align-items: stretch;
+        }
+        .tp-films__wide, .tp-films__tall {
+          width: 100%;
+          height: 100%;
+          display: block;
+          border-radius: 14px;
+          background: #000;
+          object-fit: cover;
+        }
+        .tp-films__tall { aspect-ratio: 9 / 16; }
+        @media (max-width: 860px) {
+          .tp-films { padding: 64px 16px; }
+          .tp-films__grid { grid-template-columns: 1fr; }
+          /* Stacked: the landscape loop keeps its own shape instead of
+             inheriting the portrait row height… */
+          .tp-films__wide { aspect-ratio: 16 / 9; height: auto; }
+          /* …and the portrait film centres at phone-screen width rather
+             than blowing up to a full-bleed 9:16 tower. */
+          .tp-films__tall { max-width: 320px; margin: 0 auto; height: auto; }
+        }
       `}</style>
 
       {/* ── 1. Sticky nav ─────────────────────────────────────── */}
       <header className="tp-nav">
         <Link to="/" className="tp-nav__brand">
-          <span className="tp-nav__mark">{PRODUCT_MARK}</span>
-          {PRODUCT}
+          {/* Cream sticky nav → BLACK wordmark. The alt names the club for
+              screen readers since the link otherwise loses its visible text
+              when the logo art renders. */}
+          <BrandLogo on="light" height={20} alt={`${PRODUCT} — home`}>
+            <span className="tp-nav__mark">{PRODUCT_MARK}</span>
+            {PRODUCT}
+          </BrandLogo>
         </Link>
         <nav className="tp-nav__actions">
           {/* Both used to enter through the /start door-chooser. Now that the
@@ -1468,10 +1594,22 @@ export default function Landing() {
                   <span className="tp-qcard__meta">{p.meta}</span>
                 </>
               )
-              // Three kinds of destination, not two:
+              // Four kinds of destination, not two:
+              //   disabled → no destination at all (the dead Shop card)
               //   external → a real file the host serves (coach form)
               //   public   → an in-app route with no sign-in gate (/book)
               //   default  → an in-app route behind /login
+              if (p.disabled) {
+                return (
+                  <span
+                    key={p.key}
+                    className="tp-qcard tp-qcard--soon"
+                    aria-disabled="true"
+                  >
+                    {inner}
+                  </span>
+                )
+              }
               if (p.external) {
                 return (
                   <a key={p.key || p.dest} href={p.dest} className="tp-qcard">
@@ -1641,6 +1779,41 @@ export default function Landing() {
         </Reveal>
       </section>
 
+      {/* ── 7a. Club films ────────────────────────────────────────
+          The club's own two films (from the "Made running videos" folder,
+          transcoded to H.264 so every browser plays them). The landscape
+          one is a six-second ambient loop — plays muted while in view,
+          exactly like the wall tiles above. The portrait one is the real
+          30-second film with sound, so it waits for a tap: controls,
+          poster, preload="none" — zero cost until someone chooses it. */}
+      <section className="tp-films" aria-labelledby="films-title">
+        <Reveal className="tp-films__head" as="div">
+          <div className="tp-eyebrow">The club on film</div>
+          <h2 className="tp-films__title" id="films-title">Watch us move.</h2>
+          <p className="tp-films__sub">
+            Shot by the community, on the runs and in the Hub. Press play on
+            the second one — it has sound.
+          </p>
+        </Reveal>
+        <Reveal className="tp-films__grid" as="div">
+          <AmbientFilm
+            className="tp-films__wide"
+            src="/video/made-film-wide.mp4"
+            poster="/video/made-film-wide-poster.jpg"
+            alt="Made Running film: the crew out on a run."
+          />
+          <video
+            className="tp-films__tall"
+            src="/video/made-film-tall.mp4"
+            poster="/video/made-film-tall-poster.jpg"
+            controls
+            playsInline
+            preload="none"
+            aria-label="Made Running film with sound: thirty seconds inside the club."
+          />
+        </Reveal>
+      </section>
+
       {/* ── 7b. About us / creed band ─────────────────────────────
           The club's own words, in the club's own photographs. It lands after
           the community wall on purpose: you see who shows up first, then read
@@ -1701,8 +1874,13 @@ export default function Landing() {
       {/* ── Footer ────────────────────────────────────────────── */}
       <footer className="tp-footer">
         <div className="tp-footer__brand">
-          <span className="tp-footer__mark">{PRODUCT_MARK}</span>
-          {PRODUCT}
+          {/* Dark footer slab → white wordmark; the tagline keeps its place
+              beside it. alt="" — the footer brand is decorative repetition,
+              the nav and hero already name the club. */}
+          <BrandLogo on="dark" height={18} alt="">
+            <span className="tp-footer__mark">{PRODUCT_MARK}</span>
+            {PRODUCT}
+          </BrandLogo>
           <span className="tp-footer__tagline">&middot; {PRODUCT_TAGLINE}</span>
         </div>
         <address className="tp-footer__addr">

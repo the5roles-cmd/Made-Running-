@@ -32,6 +32,7 @@ import {
 import { navFor } from '../lib/constants'
 import { useAuth } from '../auth/AuthProvider'
 import { tenant } from '../lib/theme'
+import BrandLogo from './BrandLogo'
 
 // Explicit registry, NOT `import * as Icons from 'lucide-react'`.
 //
@@ -146,8 +147,14 @@ export default function Sidebar({ rail, open, onToggleRail, onClose }) {
         // where it goes. Naming the destination is the whole point.
         aria-label={`${tenant.name} — go to the public homepage`}
       >
-        <span className="sidebar__mark">{tenant.mark}</span>
-        <span>{tenant.name}</span>
+        {/* The sidebar is the dark surface (#141414) on every viewport —
+            including the mobile drawer — so the WHITE logo file renders here.
+            alt="" because the Link above already carries the aria-label; a
+            non-empty alt would make screen readers announce the club twice. */}
+        <BrandLogo on="dark" height={24} alt="">
+          <span className="sidebar__mark">{tenant.mark}</span>
+          <span>{tenant.name}</span>
+        </BrandLogo>
       </Link>
 
       {/* Nav groups */}

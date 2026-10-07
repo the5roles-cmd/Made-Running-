@@ -401,9 +401,16 @@ const NAV_GROUPS_MADERUNNING = [
   // The AI did NOT go with the Assistant page: "Ask Made Running" in the
   // topbar opens the slide-over (ChatPanel), which was always the way in
   // that people actually used.
-  // The "Store" group (one item → /app/shop) lived here — removed when the
-  // club disabled the shop (see the note in App.jsx). The route is gone
-  // too, so a rail item would have pointed at the /app catch-all.
+  // The "Store" group is back, but its one item is `soon: true` — the club
+  // asked for the Shop button to be visible again while the shop stays
+  // disabled (Oct 2026). The Sidebar renders `soon` items as aria-disabled
+  // placeholders with no link, which matters here because the /app/shop
+  // route is still gone: a live link would land on the /app catch-all.
+  // When the shop reopens, drop the flag (and restore the route in App.jsx).
+  {
+    label: 'Store',
+    items: [{ to: '/app/shop', label: 'Shop', icon: 'ShoppingBag', soon: true }],
+  },
   {
     label: 'Intelligence',
     items: [{ to: '/app/academy', label: 'Academy', icon: 'GraduationCap' }],
