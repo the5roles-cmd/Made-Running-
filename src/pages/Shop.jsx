@@ -3,8 +3,10 @@
 // a tee is not a membership question) and /app/shop (members, inside the
 // shell). Checkout POSTs the cart to /api/checkout, which prices every line
 // server-side and returns a Square-hosted payment page; no card form is
-// built here. With no provider configured the endpoint answers
-// { demo: true } and the old external handoff keeps the flow demonstrable.
+// built here. Square is the ONLY transaction path — the club's instruction:
+// no links to the old Shopify storefront (maderunning.com) anywhere. With
+// no provider configured the endpoint answers { demo: true } and checkout
+// explains card payments are being switched on, keeping the basket intact.
 //
 // Product imagery: each product "shot" is a layered gradient + bold
 // typography composition, EXCEPT where the club has supplied its own
@@ -633,7 +635,8 @@ function BasketDrawer({ items, onClose, onQty, onRemove, onCheckout, checkoutBus
                 prices every item server-side from the same catalogue this page
                 renders, then redirects to a Square-hosted payment page. When no
                 payment provider is configured the endpoint answers
-                { demo: true } and we fall back to opening maderunning.com. */}
+                { demo: true } and a notice is shown instead — never a link to
+                the old Shopify storefront. */}
             <button
               className="btn btn--primary"
               onClick={onCheckout}
@@ -646,8 +649,8 @@ function BasketDrawer({ items, onClose, onQty, onRemove, onCheckout, checkoutBus
 
             {/* A failed START is not a failed payment — the basket is intact
                 and the honest move is to say so and invite a retry, not to
-                bounce the customer to a different website. Only { demo: true }
-                triggers the external handoff; errors land here. */}
+                bounce the customer to a different website. Both errors AND
+                the not-yet-configured { demo: true } case land here. */}
             {checkoutError && (
               <p
                 role="alert"
@@ -691,7 +694,7 @@ function BasketDrawer({ items, onClose, onQty, onRemove, onCheckout, checkoutBus
 // same catalogue file this page imports, so a tampered request can't buy a
 // £119.99 trainer for a penny. Response contract:
 //   { url }        → Square-hosted payment page; redirect this tab there.
-//   { demo: true } → no provider configured; fall back to the old handoff.
+//   { demo: true } → no provider configured; show the switching-on notice.
 async function startCartCheckout(items) {
   const res = await fetch('/api/checkout', {
     method: 'POST',
@@ -711,10 +714,12 @@ async function startCartCheckout(items) {
   return res.json()
 }
 
-// Fallback when no payment provider is configured on this deployment.
-function doCheckoutHandoff() {
-  window.open('https://maderunning.com', '_blank', 'noopener,noreferrer')
-}
+// There is deliberately NO external fallback here any more. The old
+// doCheckoutHandoff() opened maderunning.com (the Shopify storefront) when
+// no provider was configured — removed at the club's instruction: every
+// transaction happens through Square, and this site must not link out to
+// the Shopify shop at all. Until the Square token is configured in Vercel,
+// checkout says so honestly instead of quietly selling somewhere else.
 
 // ── Main Shop page ────────────────────────────────────────────────────────────
 
@@ -773,9 +778,12 @@ export default function Shop() {
         return // deliberately leave the button busy during navigation
       }
       if (data?.demo) {
-        // No payment provider on this deployment — the ONLY case that
-        // hands off to the external storefront.
-        doCheckoutHandoff()
+        // No payment provider configured yet. Say so — do NOT hand off to
+        // the external Shopify storefront (removed at the club's
+        // instruction; Square is the only transaction path).
+        setCheckoutError(
+          'Online card payments are being switched on. Your basket is saved \u2014 please try again shortly.'
+        )
       } else {
         setCheckoutError('Checkout could not start. Please try again.')
       }

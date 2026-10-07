@@ -106,14 +106,15 @@ const PATHS = [
     meta: 'Instant booking',
   },
   {
-    // The apparel side lives on the club's own storefront — send shoppers
-    // there rather than into the auth-gated admin Shop view.
-    to: 'https://maderunning.com',
-    external: true,
+    // The club's OWN storefront at /shop — public, no sign-in, pays through
+    // Square. Was an external link to maderunning.com (Shopify); removed at
+    // the club's instruction: every transaction happens through Square and
+    // nothing on this site links to the Shopify shop.
+    to: '/shop',
     label: 'Shop',
     variant: 'solid',
     blurb: 'The vest means something. Official Made Running apparel.',
-    meta: 'maderunning.com',
+    meta: 'Pay securely with Square',
   },
 ]
 

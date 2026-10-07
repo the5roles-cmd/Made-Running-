@@ -1,11 +1,16 @@
 // ── MADE RUNNING PRODUCT CATALOGUE ──────────────────────────────────────────
-// Static catalogue for the demo storefront. Real inventory should come from
-// Shopify's Storefront API once credentials exist.
+// THE single source of truth for what the shop sells and what it costs.
 //
-// >>> SWAP POINT: replace this static array with a call to
-// GET /api/2024-01/products.json (via your API proxy, never raw credentials
-// in the browser). Keep the same shape: { id, name, category, price, ... }.
-// Matches the convention established in src/lib/shopify.js.
+// Imported by BOTH sides of the sale:
+//   • src/pages/Shop.jsx renders cards from it, and
+//   • api/checkout.js prices every Square line item from it —
+// which is what makes the prices on screen and the prices charged
+// incapable of disagreeing, and why checkout never trusts a price sent
+// from the browser.
+//
+// (This file used to be labelled a Shopify swap point. That died with the
+// Shopify handoff: the club sells HERE, through Square — nothing links to
+// the old maderunning.com storefront.)
 
 export const PRODUCTS = [
   {
