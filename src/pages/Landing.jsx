@@ -976,6 +976,44 @@ export default function Landing() {
           margin: 0 auto;
           max-width: 44ch;
         }
+        /* ── The runs + gym facts that replaced the creed copy ────
+           Subheads use the eyebrow voice (small caps, letterspaced) so
+           "OUR RUNS" and "OUR GYM" read as labels over data, not as two
+           more headlines fighting the h2. */
+        .tp-creed__subhead {
+          font-size: 0.72rem;
+          font-weight: 600;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: var(--accent-ink);
+          margin: 26px 0 10px;
+        }
+        .tp-creed__subhead:first-of-type { margin-top: 0; }
+        .tp-creed__sched {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: grid;
+          gap: 8px;
+          justify-items: center;
+        }
+        .tp-creed__sched li {
+          font-size: 0.95rem;
+          line-height: 1.5;
+          color: rgba(255,255,255,0.66);
+        }
+        .tp-creed__sched strong {
+          color: #fff;
+          font-weight: 600;
+        }
+        .tp-creed__gym {
+          /* Reset the italic browser default on <address> — these are
+             directions, not a quotation. */
+          font-style: normal;
+          font-size: 0.95rem;
+          line-height: 1.6;
+          color: rgba(255,255,255,0.66);
+        }
         @media (max-width: 860px) {
           .tp-creed { grid-template-columns: 1fr; }
           /* One photograph is plenty on a phone. Keeping both would push the
@@ -1831,15 +1869,31 @@ export default function Landing() {
           />
         </div>
         <Reveal className="tp-creed__copy" as="div">
+          {/* The club asked for this band to carry EXACTLY the practical
+              facts — the three weekly runs and the gym's address — and
+              nothing else (Oct 2026). The creed copy that lived here moved
+              out entirely; the vest photo beside this column still says it. */}
           <h2 className="tp-h2 tp-creed__h2">About us</h2>
-          <p className="tp-creed__quote">&ldquo;No one gets left behind.&rdquo;</p>
-          <p className="tp-creed__body">
-            It is printed on the back of our vests because it is the only rule
-            we have. The group moves at the pace of the person at the back, and
-            somebody always runs with them. First 5k or chasing a personal best,
-            every session ends the same way &mdash; everyone in, nobody waiting
-            alone at the finish.
-          </p>
+
+          <h3 className="tp-creed__subhead">Our runs &middot; free event</h3>
+          <ul className="tp-creed__sched">
+            <li>
+              <strong>Monday</strong> 7pm &middot; 5km &middot; Deansgate, M3 4JB
+            </li>
+            <li>
+              <strong>Wednesday</strong> 5am &middot; 5km &middot; Deansgate, M3 4JB
+            </li>
+            <li>
+              <strong>Saturday</strong> 9.15am &middot; 5km &middot; Media City, M50 2EQ
+            </li>
+          </ul>
+
+          <h3 className="tp-creed__subhead">Our gym</h3>
+          {/* <address> is the right element for a street address; the
+              italic browser default is reset in its rule below. */}
+          <address className="tp-creed__gym">
+            Made Running<br />34 Knowsley Street, M8 8HQ
+          </address>
         </Reveal>
         <div className="tp-creed__frame tp-creed__frame--second">
           <img
