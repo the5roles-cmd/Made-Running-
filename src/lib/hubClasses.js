@@ -76,15 +76,13 @@ export const HUB_CLASSES = [
     discipline: 'kettlebells',
     femaleOnly: true,
   },
-  {
-    id: 'mon-1930-hot-kettlebells',
-    dbSlug: 'hot-kettlebells-mon-1930',
-    day: 1,
-    time: '19:30',
-    title: 'Hot Kettlebells',
-    coach: 'Micah',
-    discipline: 'kettlebells',
-  },
+  // Monday 7.30pm Hot Kettlebells (Micah) and Friday 9.30am Kettlebells
+  // (Daria) were REMOVED from this file at the club's instruction
+  // (Oct 2026) — deleted, not paused, because the club asked for them
+  // gone from the booking page, not marked "not running". Their rows may
+  // still exist in supabase-classes-seed.sql; nothing here renders them,
+  // and they should be dropped from the seed before it is run against
+  // the new Supabase project.
 
   // ── Tuesday ─────────────────────────────────────────────────────
   {
@@ -144,16 +142,6 @@ export const HUB_CLASSES = [
   },
 
   // ── Friday ──────────────────────────────────────────────────────
-  {
-    id: 'fri-0930-kettlebells',
-    dbSlug: 'kettlebells-fri-0930',
-    day: 5,
-    time: '09:30',
-    title: 'Kettlebells',
-    coach: 'Daria',
-    discipline: 'kettlebells',
-    femaleOnly: true,
-  },
   {
     id: 'fri-1045-the-valley',
     dbSlug: 'the-valley-fri-1045',
