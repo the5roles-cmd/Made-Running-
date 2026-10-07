@@ -1560,13 +1560,18 @@ export default function Landing() {
         {/* Made Running's own film, landscape across the entire section.
             Absolutely positioned + object-fit: cover so the section's height
             stays content-driven and the film covers whatever box results.
-            Muted + playsInline are what allow autoplay at all on iOS; under
-            prefers-reduced-motion we never autoplay and the poster stays. */}
+            Muted + playsInline are what allow autoplay at all on iOS.
+
+            NO poster, at the club's instruction (Oct 2026): on 4G and in
+            iOS Low Power Mode the browser delayed the film and sat on the
+            crew photo instead, which read as "the site loaded the wrong
+            hero". While the film buffers (or under prefers-reduced-motion,
+            where we never autoplay) the section shows .tp-hero's own dark
+            #161514 — a beat of brand-coloured quiet, not a stand-in photo. */}
         <video
           ref={heroFilmRef}
           className="tp-hero__film"
           src="/video/made-hero.mp4"
-          poster="/img/hero-crew-1100.jpg"
           autoPlay={!prefersReducedMotion()}
           muted
           loop
