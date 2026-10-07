@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Environment — .env.local holds the live Supabase keys and the Claude API
+# key for the AI proxy. Never commit it. .env.example is the checked-in
+# template that documents which variables are needed.
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# macOS AppleDouble sidecar files. This project lives on a non-HFS external
+# volume, so macOS scatters `._*` resource-fork twins next to every file.
+# They are not source, and they break linters that try to parse them as UTF-8.
+._*
+.Spotlight-V100
+.Trashes
+.vercel
+
+# ── Raw source media ──────────────────────────────────────────────────────
+# `Made running/made.mp4` is the 44 MB camera-original of the landing hero.
+# The encoded, web-weight derivative that the app actually loads is
+# public/video/made-hero.mp4 (4.9 MB) and that one IS committed.
+#
+# Keeping the original out is not about disk space in the working tree — it
+# is about history. Git stores every version of every file forever, and a
+# 44 MB binary cannot be delta-compressed, so one commit of it adds 44 MB to
+# every clone of this repo for the rest of its life, and removing it later
+# means rewriting history and force-pushing. Cheap to add later, expensive
+# to take back.
+Made running/
+
+# ── Commercial documents ──────────────────────────────────────────────────
+# Client proposal with pricing. This repository is PUBLIC; a priced proposal
+# is not source code and does not belong in it. The file stays on disk.
+SutekWellness — Made Running Platform Proposal.pdf
+*.pdf

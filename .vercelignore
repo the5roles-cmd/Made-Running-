@@ -1,0 +1,26 @@
+# Vercel installs and builds from source — never upload these.
+node_modules
+dist
+
+# Secrets. Production values live in Vercel → Settings → Environment
+# Variables, not in the deployment payload.
+.env
+.env.local
+.env.*.local
+
+# The local-dev Express proxy. api/ replaces it in production; shipping it
+# would upload dead code and imply there is a long-lived server here.
+server
+
+# This project lives on a non-HFS external volume, so macOS scatters `._*`
+# AppleDouble twins next to every file. They are binary resource forks, not
+# source, and the build tries to parse them as UTF-8.
+._*
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# Not part of the running app.
+docs
+.claude
+supabase-setup.sql

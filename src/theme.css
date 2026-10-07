@@ -1,0 +1,255 @@
+/* ============================================================
+   DESIGN TOKENS — the re-skin surface (★ ten-k #03 restrained palette)
+   ------------------------------------------------------------
+   :root holds the DEFAULT (industry-neutral "editorial") theme.
+   Each client is ONE [data-tenant="..."] block overriding a handful
+   of tokens. The <html data-tenant> attr is set from theme.js.
+   Two-tone accent: --accent for fills, --accent-ink for TEXT (AA safe).
+   ============================================================ */
+
+:root,
+[data-tenant='default'] {
+  /* ── Type families ─────────────────────────────── */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* ── Modular type scale (ratio 1.25, base 15px) ──── */
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.82rem;
+  --fs-base: 0.9375rem;
+  --fs-md: 1.05rem;
+  --fs-lg: 1.35rem;
+  --fs-xl: 1.75rem;
+  --fs-2xl: 2.25rem;
+  --fs-3xl: 3rem;
+
+  /* ── Canvas & surfaces (warm bone) ───────────────── */
+  --bg: #f3efe8;
+  --bg-2: #ece7dd;
+  --surface: #fbfaf7;
+  --surface-2: #f6f3ed;
+  --surface-raised: #ffffff;
+
+  /* ── Ink & text ──────────────────────────────────── */
+  --ink: #1c1a15;
+  --ink-2: #34302a;
+  --muted: #6c655b;
+  --faint: #9a9186;
+  --line: #e3ddd2;
+  --line-soft: #ece7dd;
+
+  /* ── Two-tone accent (teal) ──────────────────────── */
+  --accent: #12857a; /* fills, bars, rings, chart series */
+  --accent-ink: #0c655c; /* TEXT on light: links, eyebrows, stat values */
+  --accent-soft: rgba(18, 133, 122, 0.1);
+  --accent-contrast: #ffffff; /* text ON the accent fill */
+
+  /* ── Sidebar spine (graphite) ────────────────────── */
+  --sidebar-bg: #1a1916;
+  --sidebar-bg-2: #232019;
+  --sidebar-text: #b8b2a6;
+  --sidebar-text-active: #ffffff;
+  --sidebar-active-fill: rgba(255, 255, 255, 0.07);
+  --sidebar-accent-bar: var(--accent);
+
+  /* ── Status colours (desaturated, each has -bg pair) ─ */
+  --ok: #2f7d4f;
+  --ok-bg: #e5f1e8;
+  --warn: #9a7b1f;
+  --warn-bg: #f2ecd7;
+  --danger: #b04532;
+  --danger-bg: #f3e2dc;
+  --info: #3d6377;
+  --info-bg: #e0e8ec;
+
+  /* ── 8px spacing scale (★ ten-k #04) ─────────────── */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+  --s9: 96px;
+
+  /* ── Radius, shadow, motion, layout ──────────────── */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+  --shadow-sm: 0 1px 2px rgba(28, 26, 21, 0.05);
+  --shadow: 0 4px 16px rgba(28, 26, 21, 0.07);
+  --shadow-lg: 0 18px 48px rgba(28, 26, 21, 0.14);
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur: 240ms;
+
+  --sidebar-w: 250px;
+  --sidebar-w-rail: 74px;
+  --topbar-h: 62px;
+  --maxw: 1220px;
+}
+
+/* ============================================================
+   EXAMPLE CLIENT THEMES — copy a block, rename, retint.
+   These demonstrate the re-skin mechanism (see docs/THEMING.md).
+   ============================================================ */
+
+/* Private hospital — clinical calm blue on cool white */
+[data-tenant='hospital'] {
+  --font-display: 'Fraunces', Georgia, serif;
+  --bg: #eef2f5;
+  --bg-2: #e4eaef;
+  --surface: #fbfcfd;
+  --surface-2: #f2f6f8;
+  --ink: #14202b;
+  --muted: #5b6b78;
+  --line: #dbe4ea;
+  --line-soft: #e8eef2;
+  --accent: #1f7ab5;
+  --accent-ink: #175f8f;
+  --accent-soft: rgba(31, 122, 181, 0.1);
+  --sidebar-bg: #0e2233;
+  --sidebar-bg-2: #143046;
+}
+
+/* Football club — bold red spine, warm concrete canvas */
+[data-tenant='football'] {
+  --font-display: 'Fraunces', Georgia, serif;
+  --bg: #efecea;
+  --bg-2: #e6e2df;
+  --surface: #fbfaf9;
+  --surface-2: #f4f1ef;
+  --ink: #171310;
+  --muted: #6b625c;
+  --line: #e2dcd7;
+  --accent: #c62828;
+  --accent-ink: #a11f1f;
+  --accent-soft: rgba(198, 40, 40, 0.09);
+  --sidebar-bg: #141210;
+  --sidebar-bg-2: #211c19;
+}
+
+/* Finance firm — deep navy + restrained gold */
+[data-tenant='finance'] {
+  --font-display: 'Fraunces', Georgia, serif;
+  --bg: #f1f0ec;
+  --bg-2: #e8e6e0;
+  --surface: #fbfbf9;
+  --surface-2: #f4f3ef;
+  --ink: #14161d;
+  --muted: #5f636e;
+  --line: #e0dfd8;
+  --accent: #9a7b2e;
+  --accent-ink: #7c6123;
+  --accent-soft: rgba(154, 123, 46, 0.11);
+  --sidebar-bg: #10131c;
+  --sidebar-bg-2: #1a1f2c;
+}
+
+/* Pharmaceutical — clinical violet, cool clean canvas */
+[data-tenant='pharma'] {
+  --font-display: 'Fraunces', Georgia, serif;
+  --bg: #f0eef6;
+  --bg-2: #e7e4f0;
+  --surface: #fcfbfe;
+  --surface-2: #f4f2fa;
+  --ink: #191526;
+  --muted: #605b70;
+  --line: #e2dded;
+  --accent: #6a4bc4;
+  --accent-ink: #533a9c;
+  --accent-soft: rgba(106, 75, 196, 0.1);
+  --sidebar-bg: #1a1330;
+  --sidebar-bg-2: #261c44;
+}
+
+/* Construction — industrial amber, warm concrete, charcoal spine */
+[data-tenant='construction'] {
+  --font-display: 'Fraunces', Georgia, serif;
+  --bg: #efece7;
+  --bg-2: #e6e1da;
+  --surface: #fbfaf7;
+  --surface-2: #f3f0eb;
+  --ink: #1a150f;
+  --muted: #6a635a;
+  --line: #e1dbd2;
+  --accent: #c2691f;
+  --accent-ink: #93501a;
+  --accent-soft: rgba(194, 105, 31, 0.1);
+  --sidebar-bg: #17140f;
+  --sidebar-bg-2: #241f18;
+}
+
+/* Accountancy — trustworthy ledger-green, cool paper canvas */
+[data-tenant='accountancy'] {
+  --font-display: 'Fraunces', Georgia, serif;
+  --bg: #ebefec;
+  --bg-2: #e1e8e3;
+  --surface: #f9fbfa;
+  --surface-2: #eff4f1;
+  --ink: #101915;
+  --muted: #57655d;
+  --line: #dbe5df;
+  --accent: #2e7d57;
+  --accent-ink: #235f42;
+  --accent-soft: rgba(46, 125, 87, 0.1);
+  --sidebar-bg: #10201a;
+  --sidebar-bg-2: #172e26;
+}
+
+/* Made Running — real-brand re-skin.
+   Brand colours confirmed by the client: BLACK + PURPLE.
+   Backgrounds stay exactly as measured on maderunning.com (#efefef page
+   grey, #1c1c1c ink, #141414 sidebar) — only the accent tokens carry the
+   purple, per the two-tone accent pattern:
+     --accent      #6d28d9  fills/bars/rings — white on it = 7.2:1 (AA)
+     --accent-ink  #5b21b6  TEXT on light — 9.3:1 on #efefef (AAA)
+   Semantic status colours (--danger for at-risk runners, etc.) stay
+   untouched in :root — those communicate state, not brand. */
+[data-tenant='maderunning'] {
+  --font-display: 'Instrument Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  --bg: #efefef; /* the real site's page grey, measured */
+  --bg-2: #e6e6e6;
+  --surface: #ffffff;
+  --surface-2: #f5f5f5;
+  --ink: #1c1c1c; /* the real site's body ink, measured */
+  --ink-2: #2f2f2f;
+  --muted: #5c5c5c;
+  --faint: #949494;
+  --line: #dcdcdc;
+  --line-soft: #e8e8e8;
+  --accent: #6d28d9; /* fills, bars, rings — brand purple */
+  --accent-ink: #5b21b6; /* TEXT on light: links, eyebrows, stat values (9.3:1) */
+  --accent-soft: rgba(109, 40, 217, 0.1);
+  --accent-contrast: #ffffff;
+  --sidebar-bg: #141414;
+  --sidebar-bg-2: #1f1f1f;
+  --sidebar-text: #a8a8a8;
+  --sidebar-text-active: #ffffff;
+  --sidebar-active-fill: rgba(255, 255, 255, 0.1);
+  --sidebar-accent-bar: #8b5cf6;
+}
+
+/* Brand's real voice is uppercase + letterspaced (see the "MADE RUNNING"
+   wordmark and "NO ONE GETS LEFT BEHIND" apparel graphic) — apply that
+   to page titles and the sidebar lockup only, so working screens (card
+   titles, modals) stay readable rather than shouting everywhere. */
+[data-tenant='maderunning'] .page__title,
+[data-tenant='maderunning'] .sidebar__brand,
+[data-tenant='maderunning'] h1.display {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* ::selection override for the maderunning theme.
+   The default uses --accent-soft (10% purple) which is near-transparent
+   on white/light surfaces and produces no visible selection. Override
+   with a solid light-purple tint (Tailwind violet-200) that gives clear
+   visual feedback while reading unmistakably on-brand. */
+[data-tenant='maderunning'] ::selection {
+  background: #ddd6fe;
+  color: #1c1c1c;
+}

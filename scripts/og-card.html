@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Made Running — OG card generator</title>
+    <!--
+      Generator for /public/og-image.png — the 1200×630 card WhatsApp, iMessage,
+      Slack, X and Facebook show as the *first* thing anyone sees when the link
+      is shared. It is not part of the app bundle; it is opened directly in a
+      browser at 1200×630 and screenshotted.
+
+      To regenerate after a copy or photo change:
+        1. npx vite --port 4970
+        2. open http://localhost:4970/scripts/og-card.html at exactly 1200×630
+        3. screenshot the viewport, save it over public/og-image.png
+
+      It has to go through the dev server rather than file:// — the photo is
+      referenced at /img/... , the path Vite serves public/ from.
+
+      Kept in the repo rather than generated ad hoc because the old card went
+      stale — it was still selling "Own the platform your community runs on"
+      long after the page itself had become the club's own site.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { width: 1200px; height: 630px; overflow: hidden; }
+      body {
+        display: grid;
+        /* The photo gets the smaller share. The words have to survive being
+           shown as a thumbnail in a chat list, so they get the room. */
+        grid-template-columns: 700px 500px;
+        background: #141414;   /* --tp-slab, same slab as the site's dark bands */
+        font-family: 'Nunito', -apple-system, sans-serif;
+        color: #fff;
+      }
+      .copy {
+        padding: 62px 58px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .brand { display: flex; align-items: center; gap: 14px; }
+      .mark {
+        width: 46px; height: 46px; border-radius: 12px;
+        background: #fff; color: #141414;
+        font-family: 'Instrument Sans', sans-serif;
+        font-weight: 700; font-size: 26px;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .wordmark {
+        font-family: 'Instrument Sans', sans-serif;
+        font-size: 27px; font-weight: 600; letter-spacing: -0.01em;
+      }
+      h1 {
+        font-family: 'Instrument Sans', sans-serif;
+        font-size: 68px; font-weight: 500;
+        line-height: 1.04; letter-spacing: -0.025em;
+        /* The club's own line, which is also the og:title — so the card and
+           the headline beneath it in the chat bubble say the same thing
+           instead of competing. */
+      }
+      .sub {
+        margin-top: 24px;
+        font-size: 23px; line-height: 1.5;
+        color: rgba(255,255,255,0.66);
+        max-width: 30ch;
+      }
+      .foot {
+        display: flex; align-items: center; gap: 16px;
+        font-size: 15px; font-weight: 600;
+        letter-spacing: 0.14em; text-transform: uppercase;
+        color: rgba(255,255,255,0.42);
+      }
+      .dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.28); }
+      .shot { position: relative; overflow: hidden; }
+      .shot img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        /* The source is a tall portrait; centring on the faces rather than the
+           geometric middle keeps all three runners in a landscape crop. */
+        object-position: 50% 30%;
+      }
+      /* A short gradient on the seam so the photo does not cut against the
+         slab as a hard vertical line at thumbnail size. */
+      .shot::before {
+        content: ''; position: absolute; inset: 0 auto 0 0; width: 120px;
+        background: linear-gradient(90deg, #141414, rgba(20,20,20,0));
+      }
+    </style>
+  </head>
+  <body>
+    <div class="copy">
+      <div class="brand">
+        <span class="mark">M</span>
+        <span class="wordmark">Made Running</span>
+      </div>
+      <div>
+        <h1>No one gets<br />left behind.</h1>
+        <p class="sub">
+          A running community born in Manchester. No membership, no qualifying
+          pace &mdash; turn up and run.
+        </p>
+      </div>
+      <div class="foot">
+        <span>Manchester &middot; UAE &middot; US</span>
+        <span class="dot"></span>
+        <span>79.1k strong</span>
+      </div>
+    </div>
+    <div class="shot">
+      <img src="/img/hero-crew-1100.jpg" alt="" />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Made Running — SutekWellness Platform Proposal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+/* ============================================================
+   BRAND TOKENS — Made Running / SutekWellness
+   Accent: Electric Amber #FF6B00 — Manchester street energy
+   ============================================================ */
+:root {
+  --navy: #0d1f2d;
+  --navy-2: #152b3e;
+  --navy-3: #1c3a52;
+  --accent: #FF6B00;
+  --accent-ink: #cc5500;
+  --accent-soft: rgba(255, 107, 0, 0.09);
+  --sky: #ffaa55;
+  --ink: #1e2c38;
+  --muted: #5b6b7c;
+  --faint: #8b98a7;
+  --line: #e4e9ef;
+  --line-soft: #eef2f6;
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+/* ============ PAGE + RUNNING FOOTER ============ */
+@page {
+  size: A4;
+  margin: 22mm 18mm 20mm 18mm;
+  @bottom-left {
+    content: "Made Running — SutekWellness · Private & confidential";
+    font-family: 'Inter', sans-serif; font-size: 8pt; color: #9aa7b5;
+  }
+  @bottom-center { content: ""; }
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-family: 'Inter', sans-serif; font-size: 8pt; color: #9aa7b5;
+  }
+}
+@page cover { margin: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: var(--ink); font-size: 10.5pt; line-height: 1.62; margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-family: 'Commissioner', 'Inter', sans-serif; color: var(--navy); }
+p { margin: 0 0 3.5mm; orphans: 3; widows: 3; }
+strong { color: var(--navy); font-weight: 600; }
+
+/* ============ COVER ============ */
+.cover {
+  page: cover; break-after: page;
+  width: 210mm; height: 297mm;
+  background: radial-gradient(130% 90% at 15% 10%, #1c3a52 0%, var(--navy) 50%, #070f17 100%);
+  color: #fff; position: relative; padding: 26mm 22mm; overflow: hidden;
+}
+/* accent slash motif */
+.cover::before {
+  content: "";
+  position: absolute;
+  right: -10mm; bottom: 40mm;
+  width: 70mm; height: 200mm;
+  background: linear-gradient(175deg, rgba(255,107,0,0.18) 0%, transparent 60%);
+  transform: skewX(-8deg);
+  border-radius: 4px;
+}
+/* Terminal tick for the slash motif above. It used to sit at bottom: 30mm,
+   which collided with .cover-meta — that block is anchored at bottom: 22mm
+   and its right-hand column runs to two lines, so it grows upward to roughly
+   33mm and the orange bar cut straight through "Prepared for Made Running".
+   Dropped into the bottom margin instead, where it reads as a footer accent
+   and cannot be reached by the meta text however long that copy gets. */
+.cover::after {
+  content: "";
+  position: absolute; right: 8mm; bottom: 12mm;
+  width: 56mm; height: 3px;
+  background: var(--accent);
+  opacity: 0.55;
+}
+.cover-brand { display: flex; align-items: center; gap: 11px; position: relative; z-index: 2; }
+.cover-brand .mark {
+  width: 42px; height: 42px; border-radius: 8px;
+  background: var(--accent); display: flex; align-items: center; justify-content: center;
+}
+.cover-brand .mark svg { width: 22px; height: 22px; }
+.cover-brand .word { font-family: 'Commissioner', sans-serif; font-size: 15pt; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
+.cover-brand .word em { font-style: normal; color: rgba(255,255,255,0.55); font-weight: 500; }
+.cover-eyebrow { margin-top: 56mm; position: relative; z-index: 2; font-size: 8.5pt; letter-spacing: 3.5px; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+.cover-rule { width: 18mm; height: 2.5px; background: var(--accent); margin: 5mm 0 7mm; position: relative; z-index: 2; }
+.cover-title { font-size: 39pt; font-weight: 800; line-height: 1.04; margin: 0 0 8mm; color: #fff; position: relative; z-index: 2; letter-spacing: -1px; max-width: 160mm; }
+.cover-title .accent { color: var(--accent); }
+.cover-sub { font-size: 12pt; color: rgba(255,255,255,0.68); max-width: 128mm; line-height: 1.58; position: relative; z-index: 2; }
+.cover-meta { position: absolute; bottom: 22mm; left: 22mm; right: 22mm; z-index: 2; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 6mm; }
+.cover-tag { display: inline-block; border: 1px solid rgba(255,255,255,0.28); border-radius: 20px; padding: 3px 13px; font-size: 8.5pt; letter-spacing: 0.6px; color: rgba(255,255,255,0.7); }
+.cover-meta .right { text-align: right; font-size: 9pt; color: rgba(255,255,255,0.48); line-height: 1.7; }
+
+/* ============ SECTION HEADS ============ */
+.eyebrow { font-size: 8.5pt; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-ink); font-weight: 700; margin: 0 0 2.5mm; }
+h1.doc-h1 { font-size: 20pt; line-height: 1.12; margin: 0 0 5mm; letter-spacing: -0.3px; }
+.sec-head { border-top: 1px solid var(--line); padding-top: 6mm; margin: 10mm 0 4.5mm; display: flex; align-items: baseline; gap: 5mm; break-after: avoid; }
+.sec-head.brk { break-before: page; }
+.sec-num { font-family: 'Commissioner', sans-serif; font-size: 11pt; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; flex: 0 0 auto; }
+.sec-head h2 { font-size: 15.5pt; margin: 0; border: none; padding: 0; line-height: 1.18; letter-spacing: -0.2px; }
+.sec-head h2 .cont { font-weight: 400; color: var(--faint); font-size: 11pt; }
+h3 { font-size: 11pt; margin: 0 0 1.5mm; break-after: avoid; }
+p.lede { font-size: 11.5pt; color: var(--navy-2); line-height: 1.6; }
+ul.plain { margin: 2mm 0 4mm; padding-left: 4.5mm; }
+ul.plain li { margin-bottom: 2.5mm; }
+
+/* ============ CALLOUT ============ */
+.callout { background: var(--bg); border-left: 3px solid var(--accent); border-radius: 4px; padding: 5mm 6mm; margin: 5mm 0; break-inside: avoid; }
+.callout p { margin: 0; font-size: 10.5pt; color: var(--navy); }
+.callout strong { color: var(--accent-ink); }
+
+/* ============ PULL QUOTE ============ */
+.pullquote { font-family: 'Commissioner', sans-serif; font-size: 16pt; font-weight: 600; line-height: 1.3; color: var(--navy); border-left: 4px solid var(--accent); padding: 1.5mm 0 1.5mm 7mm; margin: 7mm 0; break-inside: avoid; letter-spacing: -0.2px; }
+.pullquote span { color: var(--accent-ink); }
+
+/* ============ STAT ROW ============ */
+.stat-row { display: flex; gap: 4mm; margin: 5mm 0; break-inside: avoid; }
+.stat-card { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 4.5mm 4mm; background: #fbfcfe; }
+.stat-card .n { font-family: 'Commissioner', sans-serif; font-size: 20pt; font-weight: 800; color: var(--accent-ink); line-height: 1; }
+.stat-card .l { font-size: 8.5pt; color: var(--muted); margin-top: 2mm; line-height: 1.4; }
+
+/* ============ BROWSER FRAME ============ */
+.browser-frame { border-radius: 9px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 1px 3px rgba(11,39,65,0.08), 0 12px 30px -16px rgba(11,39,65,0.30); break-inside: avoid; margin: 5mm 0 2.5mm; }
+.bf-bar { background: #eef1f4; padding: 6px 10px; display: flex; align-items: center; gap: 5px; border-bottom: 1px solid var(--line); }
+.bf-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.bf-dot.r { background: #ec6a5e; } .bf-dot.y { background: #f4bf4f; } .bf-dot.g { background: #61c454; }
+.bf-url { margin-left: 8px; font-size: 7.5pt; color: var(--muted); background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 1.5px 11px; }
+.browser-frame .bf-content { width: 100%; background: #f8f9fb; }
+.fig-caption { font-size: 8.5pt; color: var(--faint); margin: 0 0 5mm; text-align: center; font-style: italic; }
+
+/* ============ CSS PRODUCT MOCKS inside browser frames ============ */
+/* Community Module — Runners List */
+.mock-shell { padding: 0; background: #f8f9fb; min-height: 46mm; }
+.mock-topbar { background: var(--navy); padding: 3.5mm 5mm; display: flex; align-items: center; justify-content: space-between; }
+.mock-topbar .mt-title { font-family: 'Commissioner', sans-serif; font-size: 9pt; font-weight: 700; color: #fff; }
+.mock-topbar .mt-tabs { display: flex; gap: 2mm; }
+.mock-topbar .tab { font-size: 7.5pt; padding: 1.5px 7px; border-radius: 20px; color: rgba(255,255,255,0.55); background: transparent; }
+.mock-topbar .tab.active { background: var(--accent); color: #fff; }
+.mock-row { display: flex; align-items: center; gap: 3mm; padding: 3mm 5mm; border-bottom: 1px solid var(--line-soft); background: #fff; }
+.mock-row:nth-child(even) { background: #fafbfc; }
+.mock-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--navy-3); display: flex; align-items: center; justify-content: center; font-size: 7pt; font-weight: 700; color: rgba(255,255,255,0.8); flex: 0 0 auto; }
+.mock-name { flex: 1; font-size: 8.5pt; font-weight: 600; color: var(--navy); }
+.mock-sub { font-size: 7.5pt; color: var(--muted); }
+.badge { display: inline-block; border-radius: 20px; padding: 1px 7px; font-size: 7pt; font-weight: 700; letter-spacing: 0.3px; }
+.badge.active { background: rgba(61,180,90,0.12); color: #2a7d3f; }
+.badge.atrisk { background: rgba(255,107,0,0.12); color: #cc5500; }
+.badge.new { background: rgba(21,120,247,0.1); color: #0f5fc4; }
+.badge.lapsed { background: #f0f2f5; color: var(--faint); }
+.mock-chapter { font-size: 7pt; color: var(--faint); text-align: right; flex: 0 0 auto; }
+
+/* Collabs pipeline mock */
+.pipeline-shell { padding: 2.5mm 3mm; background: #f2f4f7; display: flex; gap: 2.5mm; }
+.pipeline-col { flex: 1; min-width: 0; }
+.pipeline-col-head { font-size: 6.5pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 1.5mm; padding: 0 1mm; }
+.pipeline-card { background: #fff; border-radius: 5px; border: 1px solid var(--line); padding: 2mm 2.5mm; margin-bottom: 1.5mm; }
+.pipeline-card .pc-name { font-size: 7.5pt; font-weight: 600; color: var(--navy); }
+.pipeline-card .pc-type { font-size: 6.5pt; color: var(--muted); margin-top: 0.5mm; }
+.pipeline-card .pc-tag { display: inline-block; font-size: 6pt; font-weight: 700; padding: 1px 5px; border-radius: 10px; margin-top: 1mm; }
+.pipeline-card .pc-tag.brand { background: rgba(255,107,0,0.1); color: #cc5500; }
+.pipeline-card .pc-tag.press { background: rgba(21,120,247,0.1); color: #0f5fc4; }
+.pipeline-card .pc-tag.charity { background: rgba(61,180,90,0.1); color: #2a7d3f; }
+.pipeline-card .pc-tag.sponsor { background: rgba(147,51,234,0.09); color: #7c3aed; }
+
+/* ============ FEATURE BLOCKS ============ */
+.feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm 7mm; margin: 4mm 0; }
+.feature-block { margin: 0; break-inside: avoid; }
+.feature-head { display: flex; align-items: center; gap: 2.5mm; margin-bottom: 1mm; }
+.f-icon { flex: 0 0 auto; width: 21px; height: 21px; border-radius: 6px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; }
+.f-icon svg { width: 12.5px; height: 12.5px; stroke: var(--accent-ink); }
+.feature-block h3 { margin: 0; font-size: 10pt; }
+.feature-block p { margin-left: 26px; font-size: 9.5pt; margin-bottom: 0; color: var(--muted); }
+
+/* ============ COMPARISON TABLE ============ */
+table.compare { width: 100%; border-collapse: collapse; margin: 4mm 0; break-inside: avoid; }
+table.compare tr { break-inside: avoid; }
+table.compare th { background: var(--navy); color: #fff; padding: 3mm 3.5mm; font-size: 9pt; font-family: 'Commissioner', sans-serif; font-weight: 600; text-align: left; }
+table.compare th:first-child { width: 28mm; border-radius: 6px 0 0 0; }
+table.compare th:last-child { border-radius: 0 6px 0 0; }
+table.compare td { padding: 3.5mm 3.5mm; border-bottom: 1px solid var(--line-soft); vertical-align: top; font-size: 9.7pt; }
+table.compare td.k { width: 28mm; font-weight: 700; color: var(--navy); font-size: 9pt; }
+
+/* ============ OLD / NEW SPLIT ============ */
+.split { display: flex; gap: 5mm; margin: 6mm 0; break-inside: avoid; }
+.split .panel { flex: 1; border-radius: 11px; padding: 6mm 6mm 5mm; }
+.panel.old { background: #eef1f5; border: 1px solid var(--line); }
+.panel.new { background: linear-gradient(160deg, var(--navy-3), var(--navy) 85%); color: #eaf2fb; }
+.panel .p-tag { font-size: 8pt; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 1.5mm; }
+.panel.old .p-tag { color: var(--faint); }
+.panel.new .p-tag { color: var(--accent); }
+.panel .p-title { font-family: 'Commissioner', sans-serif; font-size: 12.5pt; font-weight: 700; margin-bottom: 4mm; letter-spacing: -0.2px; line-height: 1.2; }
+.panel.old .p-title { color: var(--navy); }
+.panel.new .p-title { color: #fff; }
+.panel ul { list-style: none; margin: 0; padding: 0; }
+.panel li { font-size: 9.3pt; line-height: 1.5; padding: 2.2mm 0 2.2mm 6mm; position: relative; }
+.panel.old li { border-top: 1px solid #e0e5eb; color: var(--muted); }
+.panel.new li { border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+.panel li:first-child { border-top: none; }
+.panel li::before { content: ""; position: absolute; left: 0; top: 4mm; width: 5px; height: 5px; border-radius: 50%; }
+.panel.old li::before { background: var(--faint); }
+.panel.new li::before { background: var(--accent); }
+
+/* ============ FLOW STEPS ============ */
+.flow { display: flex; align-items: stretch; gap: 0; margin: 6mm 0; break-inside: avoid; }
+.flow .step { flex: 1; border: 1px solid var(--line); border-radius: 9px; padding: 4.5mm 4mm; background: #fbfcfe; }
+.flow .step .s-num { font-family: 'Commissioner', sans-serif; font-size: 8.5pt; font-weight: 700; color: var(--accent); letter-spacing: 1.5px; }
+.flow .step .s-title { font-family: 'Commissioner', sans-serif; font-weight: 700; color: var(--navy); font-size: 10pt; margin: 1.5mm 0; }
+.flow .step .s-body { font-size: 8.5pt; color: var(--muted); line-height: 1.45; }
+.flow .arrow { flex: 0 0 auto; align-self: center; color: var(--accent); font-size: 14pt; padding: 0 3mm; font-weight: 700; }
+
+/* ============ ROLE ROWS ============ */
+.roles { margin: 5mm 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; break-inside: avoid; }
+.roles .r-head, .roles .r-row { display: flex; }
+.roles .r-head { background: var(--navy); color: #fff; font-size: 8pt; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
+.roles .r-head div { padding: 3mm 5mm; flex: 1; }
+.roles .r-head div:first-child { flex: 0 0 52%; color: rgba(255,255,255,0.55); border-right: 1px solid rgba(255,255,255,0.08); }
+.roles .r-head div:last-child { color: var(--accent); }
+.roles .r-row { border-top: 1px solid var(--line-soft); font-size: 9.7pt; }
+.roles .r-row:nth-child(even) { background: #fbfcfe; }
+.roles .r-row .was { flex: 0 0 52%; padding: 3.2mm 5mm; color: var(--muted); border-right: 1px solid var(--line-soft); text-decoration: line-through; text-decoration-color: var(--line); }
+.roles .r-row .now { flex: 1; padding: 3.2mm 5mm; color: var(--navy); font-weight: 600; }
+
+/* ============ TIMELINE (spine per-item via ::before) ============ */
+.timeline { margin: 7mm 0 5mm; }
+.tl-item { display: grid; grid-template-columns: 1fr 12mm 1fr; align-items: start; break-inside: avoid; }
+.tl-spine { position: relative; align-self: stretch; grid-column: 2; }
+.tl-spine::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--line); transform: translateX(-50%); }
+.tl-item:first-child .tl-spine::before { top: 7.5mm; }
+.tl-item:last-child .tl-spine::before { bottom: auto; height: 7.5mm; }
+.tl-dot { position: absolute; left: 50%; top: 7.5mm; width: 11px; height: 11px; border-radius: 50%; background: var(--accent); transform: translate(-50%, -50%); box-shadow: 0 0 0 3.5px var(--accent-soft); }
+.tl-cell { padding: 4.5mm 0 5.5mm; }
+.tl-cell.left { grid-column: 1; text-align: right; padding-right: 7mm; }
+.tl-cell.right { grid-column: 3; text-align: left; padding-left: 7mm; }
+.tl-step { font-size: 7.5pt; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; color: var(--accent); margin-bottom: 1.5mm; }
+.tl-title { font-family: 'Commissioner', sans-serif; font-size: 11.5pt; font-weight: 700; color: var(--navy); margin-bottom: 1.5mm; letter-spacing: -0.2px; }
+.tl-body { font-size: 9pt; color: var(--muted); line-height: 1.45; }
+/* Empty cell placeholder to keep 3-col grid balanced */
+.tl-empty { grid-column: 1; }
+.tl-empty-r { grid-column: 3; }
+
+/* ============ CTA PANEL ============ */
+.cta-panel { background: radial-gradient(130% 100% at 10% 8%, #1c3a52, var(--navy) 60%, #070f17 100%); color: #fff; border-radius: 13px; padding: 10mm 10mm 9mm; margin: 8mm 0 0; break-inside: avoid; position: relative; overflow: hidden; }
+.cta-panel::before { content: ""; position: absolute; right: -6mm; top: -6mm; width: 44mm; height: 44mm; background: radial-gradient(circle, rgba(255,107,0,0.22), transparent 65%); border-radius: 50%; }
+.cta-panel .c-eyebrow { font-size: 8.5pt; letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 3mm; position: relative; z-index: 1; }
+.cta-panel h2 { color: #fff; font-size: 18pt; margin: 0 0 4mm; border: none; padding: 0; letter-spacing: -0.3px; position: relative; z-index: 1; }
+.cta-panel p { color: rgba(255,255,255,0.68); font-size: 10.5pt; margin-bottom: 3mm; position: relative; z-index: 1; max-width: 140mm; }
+.cta-panel .sign { margin-top: 6mm; padding-top: 5mm; border-top: 1px solid rgba(255,255,255,0.15); font-size: 9pt; color: rgba(255,255,255,0.45); position: relative; z-index: 1; }
+.cta-url { color: var(--accent); font-weight: 600; }
+
+/* ============ VALUATION CALLOUT (special amber) ============ */
+.callout.amber { background: rgba(255,107,0,0.06); border-left-color: var(--accent); }
+.callout.amber p { color: var(--navy); }
+
+/* Indent helper */
+.indent { padding-left: 5mm; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="cover">
+  <div class="cover-brand">
+    <div class="mark">
+      <!-- Running footprint mark — CSS SVG -->
+      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M11 3C7 3 4 6 4 10c0 5 7 11 7 11s7-6 7-11c0-4-3-7-7-7z" fill="#fff" fill-opacity="0.92"/>
+        <circle cx="11" cy="10" r="3" fill="#FF6B00"/>
+      </svg>
+    </div>
+    <div class="word">SutekWellness <em>by Made Running</em></div>
+  </div>
+  <div class="cover-eyebrow">Platform Proposal · July 2026</div>
+  <div class="cover-rule"></div>
+  <h1 class="cover-title">Own the platform<br>that keeps <span class="accent">no one left behind.</span></h1>
+  <p class="cover-sub">A single bespoke CRM — Community module + Business module — purpose-built for Made Running's 79.1k-strong movement. One asset on your balance sheet, not four rented tools on someone else's.</p>
+  <div class="cover-meta">
+    <span class="cover-tag">Private &amp; confidential</span>
+    <div class="right">Prepared for Made Running<br>July 2026 · sutekwellness.com</div>
+  </div>
+</section>
+
+<!-- ============ EXECUTIVE SUMMARY ============ -->
+<p class="eyebrow">Executive summary</p>
+<h1 class="doc-h1">A Manchester community this large deserves infrastructure to match</h1>
+
+<p class="lede">Made Running has 79.1k Instagram followers, BBC coverage, and collabs with Balenciaga, boohooMAN and Barry's Bootcamp. It does not have a database. Sessions are announced in DMs. Attendance is remembered by feel. Runners who quietly stop showing up are noticed only by accident.</p>
+
+<p>That gap — between the scale of the community and the fragility of the tooling — is the risk and the opportunity. <strong>SutekWellness</strong> closes it: a bespoke two-module platform, purpose-built for Made Running, that lives on your balance sheet rather than a succession of monthly SaaS invoices. It replaces Klaviyo, Circle, Eventbrite, HubSpot and Pipedrive simultaneously — and delivers one capability none of them can: automatic re-engagement when any runner goes thirty days without a session, surfacing a caring prompt so nobody slips away unnoticed.</p>
+
+<p>That is "No One Gets Left Behind" expressed as software.</p>
+
+<!-- ============ 01 — THE OPPORTUNITY ============ -->
+<div class="sec-head"><span class="sec-num">01</span><h2>The community, by the numbers</h2></div>
+<p>The live SutekWellness platform already contains seeded data reflecting Made Running's real community. These are not estimates.</p>
+
+<div class="stat-row">
+  <div class="stat-card"><div class="n">50</div><div class="l">Runners on platform<br>across 4 city chapters</div></div>
+  <div class="stat-card"><div class="n">901</div><div class="l">Attendance records<br>across 51 sessions</div></div>
+  <div class="stat-card"><div class="n">8</div><div class="l">Runners currently flagged<br>at-risk of disengaging</div></div>
+</div>
+
+<div class="callout amber">
+  <p><strong>The 8 at-risk runners above would be invisible in a spreadsheet.</strong> In SutekWellness, each one surfaces with a caring re-engagement prompt — a direct expression of Made Running's founding motto: No One Gets Left Behind.</p>
+</div>
+
+<!-- Runners list mock -->
+<div class="browser-frame">
+  <div class="bf-bar">
+    <span class="bf-dot r"></span><span class="bf-dot y"></span><span class="bf-dot g"></span>
+    <span class="bf-url">sutekwellness.com · Community › Runners</span>
+  </div>
+  <div class="bf-content">
+    <div class="mock-shell">
+      <div class="mock-topbar">
+        <span class="mt-title">Runners</span>
+        <div class="mt-tabs">
+          <span class="tab active">All 50</span>
+          <span class="tab">Active 30</span>
+          <span class="tab">At risk 8</span>
+          <span class="tab">New 7</span>
+        </div>
+      </div>
+      <!-- Runner rows -->
+      <div class="mock-row">
+        <div class="mock-avatar">JK</div>
+        <div>
+          <div class="mock-name">Jordan Kane</div>
+          <div class="mock-sub">Last run: 3 days ago · 22 sessions</div>
+        </div>
+        <span class="badge active">Active</span>
+        <span class="mock-chapter">Manchester</span>
+      </div>
+      <div class="mock-row">
+        <div class="mock-avatar" style="background:#1c3a52">SR</div>
+        <div>
+          <div class="mock-name">Sasha Rahman</div>
+          <div class="mock-sub">Last run: 31 days ago · 14 sessions</div>
+        </div>
+        <span class="badge atrisk">At risk</span>
+        <span class="mock-chapter">London</span>
+      </div>
+      <div class="mock-row">
+        <div class="mock-avatar" style="background:#3a1c52">NP</div>
+        <div>
+          <div class="mock-name">Niamh Patterson</div>
+          <div class="mock-sub">Joined 8 days ago · 2 sessions</div>
+        </div>
+        <span class="badge new">New</span>
+        <span class="mock-chapter">Leeds</span>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="fig-caption">PLACEHOLDER — replace with live screenshot of the Runners view at sutekwellness.com. Mock reflects real data: 50 runners, 4 chapters, at-risk badge logic.</p>
+
+<!-- ============ 02 — THE PLATFORM ============ -->
+<div class="sec-head"><span class="sec-num">02</span><h2>SutekWellness — two modules, one platform</h2></div>
+<p class="lede">Two genuinely different audiences. One platform you own.</p>
+
+<div class="feature-grid">
+  <div class="feature-block">
+    <div class="feature-head">
+      <span class="f-icon"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></span>
+      <h3>Runner profiles &amp; chapters</h3>
+    </div>
+    <p>Every runner's full history: sessions attended, chapter, volunteer status, and a status flag updated automatically from their last run date.</p>
+  </div>
+  <div class="feature-block">
+    <div class="feature-head">
+      <span class="f-icon"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="13" rx="2"/><line x1="7" y1="2" x2="7" y2="6"/><line x1="13" y1="2" x2="13" y2="6"/><line x1="3" y1="9" x2="17" y2="9"/></svg></span>
+      <h3>Sessions &amp; attendance</h3>
+    </div>
+    <p>51 sessions logged with location, time, and chapter. Attendance is tracked per runner — the raw material for the re-engagement engine.</p>
+  </div>
+  <div class="feature-block">
+    <div class="feature-head">
+      <span class="f-icon"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3l1.5 4.5H16l-3.7 2.7 1.4 4.3L10 12l-3.7 2.5 1.4-4.3L4 7.5h4.5z"/></svg></span>
+      <h3>Automatic re-engagement</h3>
+    </div>
+    <p>30 days without a session → runner is flagged at-risk and a personalised outreach prompt surfaces. No runner slips away unnoticed.</p>
+  </div>
+  <div class="feature-block">
+    <div class="feature-head">
+      <span class="f-icon"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 10h6M10 7v6"/></svg></span>
+      <h3>Hub &amp; workshops</h3>
+    </div>
+    <p>A physical hub with bookable workshops, volunteer coordination, and city chapter expansion — structured infrastructure for a growing movement.</p>
+  </div>
+  <div class="feature-block">
+    <div class="feature-head">
+      <span class="f-icon"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7l-7-4-7 4v6l7 4 7-4V7z"/></svg></span>
+      <h3>Partners &amp; Collabs pipeline</h3>
+    </div>
+    <p>6 active partners and a Collabs pipeline covering press, brand deals, charity, sponsorship, wholesale and ambassadors — all in one Kanban view.</p>
+  </div>
+  <div class="feature-block">
+    <div class="feature-head">
+      <span class="f-icon"><svg viewBox="0 0 20 20" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h14v5H3z"/><path d="M3 12h14v5H3z"/><path d="M7 8v4"/><path d="M13 8v4"/></svg></span>
+      <h3>Shop &amp; outreach tracking</h3>
+    </div>
+    <p>32 shop orders and 22 outreach participants in the live demo — connecting the community's commercial activity and ambassador reach in one view.</p>
+  </div>
+</div>
+
+<!-- Collabs pipeline mock -->
+<div class="browser-frame">
+  <div class="bf-bar">
+    <span class="bf-dot r"></span><span class="bf-dot y"></span><span class="bf-dot g"></span>
+    <span class="bf-url">sutekwellness.com · Business › Collabs Pipeline</span>
+  </div>
+  <div class="bf-content">
+    <div class="pipeline-shell">
+      <div class="pipeline-col">
+        <div class="pipeline-col-head">Prospect</div>
+        <div class="pipeline-card">
+          <div class="pc-name">Balenciaga UK</div>
+          <div class="pc-type">Brand collab</div>
+          <span class="pc-tag brand">Brand</span>
+        </div>
+        <div class="pipeline-card">
+          <div class="pc-name">Manchester Evening News</div>
+          <div class="pc-type">Press feature</div>
+          <span class="pc-tag press">Press</span>
+        </div>
+      </div>
+      <div class="pipeline-col">
+        <div class="pipeline-col-head">In Conversation</div>
+        <div class="pipeline-card">
+          <div class="pc-name">boohooMAN</div>
+          <div class="pc-type">Brand collab · Ambassador</div>
+          <span class="pc-tag brand">Brand</span>
+        </div>
+        <div class="pipeline-card">
+          <div class="pc-name">Manchester City Foundation</div>
+          <div class="pc-type">Charity partner</div>
+          <span class="pc-tag charity">Charity</span>
+        </div>
+      </div>
+      <div class="pipeline-col">
+        <div class="pipeline-col-head">Agreed</div>
+        <div class="pipeline-card">
+          <div class="pc-name">Barry's Bootcamp</div>
+          <div class="pc-type">Cross-promotion</div>
+          <span class="pc-tag sponsor">Sponsor</span>
+        </div>
+      </div>
+      <div class="pipeline-col">
+        <div class="pipeline-col-head">Live</div>
+        <div class="pipeline-card">
+          <div class="pc-name">BBC Sport</div>
+          <div class="pc-type">Press · Ongoing</div>
+          <span class="pc-tag press">Press</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="fig-caption">PLACEHOLDER — replace with live screenshot of the Collabs Kanban at sutekwellness.com. Mock reflects real partners: Balenciaga, boohooMAN, Barry's Bootcamp, BBC.</p>
+
+<!-- ============ 03 — THE COMMERCIAL ARGUMENT ============ -->
+<div class="sec-head"><span class="sec-num">03</span><h2>Own it. Don't rent it.</h2></div>
+
+<p class="lede">Rented SaaS is an operating expense. Bespoke software is a balance-sheet asset. The moment you stop paying Klaviyo, the lists vanish. The moment you stop paying Pipedrive, the pipeline disappears. SutekWellness is yours — and its value compounds the day you sell.</p>
+
+<div class="split">
+  <div class="panel old">
+    <div class="p-tag">The old way</div>
+    <div class="p-title">Rented tools, fragmented data, no safety net</div>
+    <ul>
+      <li>Instagram DMs for session RSVPs — no searchable record</li>
+      <li>Spreadsheets to track who turned up — manually maintained</li>
+      <li>Klaviyo for email — $$$  / month; cancel and lose everything</li>
+      <li>Circle or Mighty Networks for community — another monthly fee</li>
+      <li>Eventbrite or RunSignup for sessions — another fee per ticket</li>
+      <li>HubSpot or Pipedrive for brand collabs — another subscription</li>
+      <li>No re-engagement logic — lapsed runners disappear silently</li>
+    </ul>
+  </div>
+  <div class="panel new">
+    <div class="p-tag">The new way</div>
+    <div class="p-title">One platform, fully owned, compounding in value</div>
+    <ul>
+      <li>Runners database with profile, history, status — always yours</li>
+      <li>Attendance tracked automatically, per session, per chapter</li>
+      <li>At-risk flag fires at 30 days — re-engagement prompt surfaces</li>
+      <li>Hub, workshops and volunteers in the same system</li>
+      <li>Collabs pipeline: press, brands, charity, sponsors — one view</li>
+      <li>Zero SaaS licence fees once built — you own the code</li>
+      <li>Valuation uplift: the system is an asset when you sell</li>
+    </ul>
+  </div>
+</div>
+
+<div class="pullquote">Every SaaS subscription you cancel is revenue someone else was building on your back. <span>SutekWellness puts that value on your balance sheet.</span></div>
+
+<!-- ============ 04 — THE IMPACT, BY AUDIENCE ============ -->
+<div class="sec-head"><span class="sec-num">04</span><h2>The impact, by audience</h2></div>
+
+<table class="compare">
+  <tr>
+    <th>Audience</th>
+    <th>What SutekWellness changes for them</th>
+  </tr>
+  <tr>
+    <td class="k">Founders &amp; leadership</td>
+    <td>One dashboard for community health, commercial pipeline, and cross-city chapters. No more context-switching between four tools. Monthly valuation grows rather than disappearing when subscriptions cancel.</td>
+  </tr>
+  <tr>
+    <td class="k">Session leads &amp; volunteers</td>
+    <td>Session rosters auto-populate. Attendance logged by scanning or clicking — not a clipboard. Volunteers managed with structured roles per chapter.</td>
+  </tr>
+  <tr>
+    <td class="k">Runners (community)</td>
+    <td>Never forgotten. At-risk status triggers a personal outreach from the team — a direct expression of the "No One Gets Left Behind" founding commitment.</td>
+  </tr>
+  <tr>
+    <td class="k">Brand &amp; commercial partners</td>
+    <td>Every deal tracked from Prospect to Live in a Kanban pipeline, with deal type, stage, and partner context — no more notes-app cobbling for Balenciaga conversations.</td>
+  </tr>
+</table>
+
+<!-- ============ 05 — HOW IT WORKS ============ -->
+<div class="sec-head"><span class="sec-num">05</span><h2>How the re-engagement engine works</h2></div>
+<p>Three steps, automatic. No manual auditing of spreadsheets required.</p>
+<div class="flow">
+  <div class="step">
+    <div class="s-num">STEP 01</div>
+    <div class="s-title">Session attendance logged</div>
+    <div class="s-body">Each session is checked off in SutekWellness. Attendance syncs to every runner's profile instantly.</div>
+  </div>
+  <div class="arrow">&rarr;</div>
+  <div class="step">
+    <div class="s-num">STEP 02</div>
+    <div class="s-title">30-day clock starts</div>
+    <div class="s-body">The system monitors the gap since each runner's last session. At 30 days, status shifts to At Risk automatically.</div>
+  </div>
+  <div class="arrow">&rarr;</div>
+  <div class="step">
+    <div class="s-num">STEP 03</div>
+    <div class="s-title">Caring prompt surfaces</div>
+    <div class="s-body">The runner's name and context appear in the team's queue. A personal DM goes out. No one gets left behind.</div>
+  </div>
+</div>
+
+<!-- ============ 06 — BEFORE & AFTER OPERATIONS ============ -->
+<div class="sec-head"><span class="sec-num">06</span><h2>Operations, before and after</h2></div>
+<div class="roles">
+  <div class="r-head">
+    <div>Before SutekWellness</div>
+    <div>After SutekWellness</div>
+  </div>
+  <div class="r-row">
+    <div class="was">Session RSVPs managed in Instagram DMs</div>
+    <div class="now">Structured RSVP captured per runner, per session, per chapter</div>
+  </div>
+  <div class="r-row">
+    <div class="was">Attendance tracked on spreadsheets — manually</div>
+    <div class="now">Attendance logged in SutekWellness; history auto-builds per runner</div>
+  </div>
+  <div class="r-row">
+    <div class="was">Lapsed runners noticed only by accident (or not at all)</div>
+    <div class="now">At-risk flag fires at 30 days; re-engagement prompt surfaced</div>
+  </div>
+  <div class="r-row">
+    <div class="was">Brand collab notes scattered across email, DMs, notes apps</div>
+    <div class="now">All 10 collabs in a single Kanban pipeline with stage and type</div>
+  </div>
+  <div class="r-row">
+    <div class="was">Four SaaS subscriptions — none owned; cancel = data gone</div>
+    <div class="now">One bespoke platform, fully owned — code and data are yours</div>
+  </div>
+  <div class="r-row">
+    <div class="was">Tooling is an operating expense on someone else's balance sheet</div>
+    <div class="now">SutekWellness is a business asset that increases your sale valuation</div>
+  </div>
+</div>
+
+<!-- ============ 07 — DELIVERY TIMELINE ============ -->
+<div class="sec-head"><span class="sec-num">07</span><h2>Delivery timeline</h2></div>
+<p>A structured phased build — community infrastructure first, commercial pipeline second, expansion third.</p>
+
+<div class="timeline">
+  <!-- Item 1 — LEFT -->
+  <div class="tl-item">
+    <div class="tl-cell left">
+      <div class="tl-step">Phase 01 · Now</div>
+      <div class="tl-title">Live demo ready</div>
+      <div class="tl-body">50 runners, 51 sessions, 901 attendance records. At-risk logic live. 4 chapters seeded. Demo available today at sutekwellness.com.</div>
+    </div>
+    <div class="tl-spine"><span class="tl-dot"></span></div>
+    <div class="tl-empty-r"></div>
+  </div>
+
+  <!-- Item 2 — RIGHT -->
+  <div class="tl-item">
+    <div class="tl-empty"></div>
+    <div class="tl-spine"><span class="tl-dot"></span></div>
+    <div class="tl-cell right">
+      <div class="tl-step">Phase 02 · Week 1–2</div>
+      <div class="tl-title">Community module signed off</div>
+      <div class="tl-body">Made Running data migrated in. Real runner profiles, real sessions, attendance history locked in. Re-engagement prompts configured and tested.</div>
+    </div>
+  </div>
+
+  <!-- Item 3 — LEFT -->
+  <div class="tl-item">
+    <div class="tl-cell left">
+      <div class="tl-step">Phase 03 · Week 3–4</div>
+      <div class="tl-title">Business module live</div>
+      <div class="tl-body">Collabs pipeline populated with real partner data. Press, brand, charity and sponsorship stages configured. Founders have a single commercial view.</div>
+    </div>
+    <div class="tl-spine"><span class="tl-dot"></span></div>
+    <div class="tl-empty-r"></div>
+  </div>
+
+  <!-- Item 4 — RIGHT -->
+  <div class="tl-item">
+    <div class="tl-empty"></div>
+    <div class="tl-spine"><span class="tl-dot"></span></div>
+    <div class="tl-cell right">
+      <div class="tl-step">Phase 04 · Month 2</div>
+      <div class="tl-title">Hub, workshops &amp; mobile</div>
+      <div class="tl-body">Physical hub bookings, workshop scheduling, volunteer coordination. Mobile-optimised views for session leads on the ground.</div>
+    </div>
+  </div>
+
+  <!-- Item 5 — LEFT -->
+  <div class="tl-item">
+    <div class="tl-cell left">
+      <div class="tl-step">Phase 05 · Month 3+</div>
+      <div class="tl-title">Multi-city &amp; ownership handoff</div>
+      <div class="tl-body">Additional chapter expansion (beyond Manchester, London, Birmingham, Leeds). Full codebase and data handed to Made Running — the platform is an owned asset, not a rental.</div>
+    </div>
+    <div class="tl-spine"><span class="tl-dot"></span></div>
+    <div class="tl-empty-r"></div>
+  </div>
+</div>
+
+<!-- ============ CLOSING CTA ============ -->
+<div class="cta-panel">
+  <div class="c-eyebrow">What's next</div>
+  <h2>See the live platform, then let's talk numbers.</h2>
+  <p>The demo is live right now at <span class="cta-url">sutekwellness.com</span> — every runner, every session, every collab deal, the at-risk queue. Walk through it and ask any question. If it feels right, the next step is a scoping call to agree the migration plan and a fixed-price build figure. No subscriptions. No exit fees. One asset, yours permanently.</p>
+  <p>Made Running has built something rare: a community that actually shows up, across four cities, for each other. It deserves a platform that holds that community with the same care.</p>
+  <div class="sign">Prepared by Merlin · sutekwellness.com &nbsp;·&nbsp; July 2026</div>
+</div>
+
+</body>
+</html>

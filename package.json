@@ -1,0 +1,33 @@
+{
+  "name": "made-running-crm",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Made Running — community + business CRM (Vite + React + Supabase + AI proxy).",
+  "scripts": {
+    "dev": "concurrently -n web,api -c cyan,magenta \"vite\" \"node server/index.cjs\"",
+    "web": "vite",
+    "api": "node server/index.cjs",
+    "build": "vite build && node scripts/prerender-classes.mjs",
+    "preview": "vite preview",
+    "lint": "oxlint"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.72.0",
+    "@supabase/supabase-js": "^2.110.0",
+    "lucide-react": "^1.23.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1",
+    "recharts": "^3.9.2",
+    "voyageai": "^0.0.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.3",
+    "concurrently": "^9.1.2",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "oxlint": "^1.71.0",
+    "vite": "^8.1.1"
+  }
+}

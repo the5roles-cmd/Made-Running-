@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Made Running — a running community born in Manchester, now five chapters across the UK, UAE and US. No membership, no qualifying pace. No one gets left behind." />
+    <meta name="theme-color" content="#1c1c1c" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Made Running — No One Gets Left Behind" />
+    <meta property="og:description" content="A running community born in Manchester. 79k strong, five chapters, three countries. Whether it is your first mile or your fastest, there is a group here that moves at your pace." />
+    <meta property="og:type" content="website" />
+    <!-- ── These pointed at sutekwellness.com, which answers 402 ──
+         sutekwellness.com returns 402 Payment Required on every path,
+         /og-image.jpg included. Both of these tags are read by a CRAWLER and
+         never by a browser that is already on the page, so an unreachable host
+         here does not degrade the preview — it deletes it. Every link to this
+         site pasted into WhatsApp, Facebook or iMessage was rendering with no
+         image and a canonical URL that goes nowhere, the landing page
+         included. The identical image on the address below answers 200.
+
+         Put these back the moment sutekwellness.com is serving again, or pass
+         SITE_ORIGIN at build time — scripts/prerender-classes.mjs derives all
+         twelve class previews from og:url, so the two cannot drift.
+
+         The brand is unaffected: og:site_name below is the name a reader
+         actually sees in the preview, and that is still Made Running. -->
+    <meta property="og:url" content="https://made-running-platform.vercel.app" />
+    <meta property="og:image" content="https://made-running-platform.vercel.app/og-image.jpg?v=2" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:alt" content="Made Running — no one gets left behind. Three club members in Manchester." />
+    <!-- The card is regenerated from scripts/og-card.html. It was a JPEG swap
+         from a 621KB PNG (208KB now) because this photo-led card compresses
+         badly as PNG and chat clients refetch it constantly. The ?v=2 busts
+         WhatsApp's and Facebook's scraper caches, which hold an OG image for
+         days and would otherwise keep serving the old pitch card. -->
+    <meta name="twitter:image:alt" content="Made Running — no one gets left behind. Three club members in Manchester." />
+    <!-- The page carries the club's own name and voice, and og:site_name is
+         what carries it into the preview. The host in og:url above is allowed
+         to differ from the brand — what it is NOT allowed to be is an address
+         that does not answer, which is why it changed. -->
+    <meta property="og:site_name" content="Made Running" />
+
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Made Running — No One Gets Left Behind" />
+    <meta name="twitter:description" content="A running community born in Manchester. 79k strong, five chapters, three countries. Everyone welcome." />
+    <!-- Same host change as og:image above, and for the same reason. X falls
+         back to og:image when twitter:image is missing but NOT when it is
+         present and unreachable, so leaving this one behind would have fixed
+         the preview everywhere except on X. -->
+    <meta name="twitter:image" content="https://made-running-platform.vercel.app/og-image.jpg?v=2" />
+
+    <!-- Matches the title Landing.jsx sets at runtime. They were different,
+         which meant a visible title flash on load and a crawler-visible name
+         ("Made Running CRM") that no longer matched the product. -->
+    <title>Made Running — No One Gets Left Behind</title>
+
+    <!-- Font loading: preconnect then load with display=swap (already in URL param) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

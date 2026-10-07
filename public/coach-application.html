@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Coach with Made Running — Application</title>
+<meta name="description" content="Apply to coach or instruct with Made Running. Tell us your disciplines, experience and qualifications." />
+<meta name="robots" content="noindex" />
+
+<!-- OG: this URL gets pasted into WhatsApp groups far more than it gets
+     Googled, so the share card matters more than the search snippet. -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Coach with Made Running" />
+<meta property="og:description" content="Apply to lead runs, classes and 1:1 sessions with Made Running." />
+<meta property="og:image" content="/og-image.jpg" />
+<meta name="theme-color" content="#141414" />
+<link rel="icon" href="/favicon.svg" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   TOKENS — lifted verbatim from the CRM's theme.css [data-tenant='maderunning']
+   block so this page cannot drift from the app it feeds. Black + purple are
+   the client-confirmed brand colours; the greys were measured off
+   maderunning.com rather than invented.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  --font-display: 'Instrument Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --bg: #efefef;
+  --surface: #ffffff;
+  --surface-2: #f5f5f5;
+  --ink: #1c1c1c;
+  --muted: #5c5c5c;
+  --faint: #949494;
+  --line: #dcdcdc;
+  --line-soft: #e8e8e8;
+
+  /* Two-tone accent. --accent is for FILLS (white on it = 7.2:1).
+     --accent-ink is for TEXT on light (9.3:1 on #efefef). Using the fill
+     purple as text would sit at ~5.9:1 — passing, but visibly weaker. */
+  --accent: #6d28d9;
+  --accent-ink: #5b21b6;
+  --accent-soft: rgba(109, 40, 217, 0.1);
+
+  --black: #141414;
+  --black-2: #1f1f1f;
+
+  --danger: #b42318;
+  --danger-soft: rgba(180, 35, 24, 0.08);
+  --ok: #0f7b45;
+
+  /* 8px spacing scale. Every margin/padding below is one of these — no
+     magic numbers anywhere in the sheet. */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px;
+
+  /* Modular type scale, ratio 1.25 from a 16px base. */
+  --fs-xs: 0.75rem;    /* 12 */
+  --fs-sm: 0.875rem;   /* 14 */
+  --fs-md: 1rem;       /* 16 */
+  --fs-lg: 1.25rem;    /* 20 */
+  --fs-xl: 1.5625rem;  /* 25 */
+  --fs-2xl: 1.953rem;  /* 31 */
+  --fs-3xl: 2.441rem;  /* 39 */
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: #ddd6fe; color: var(--ink); }
+
+/* One focus treatment for the whole document. Never rely on the UA ring —
+   it is invisible against the dark header and inconsistent across browsers. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.hero :focus-visible { outline-color: #fff; }
+
+/* ── Header ─────────────────────────────────────────────────────────────
+   The signature move: a near-black band with the wordmark and an oversized
+   uppercase title, letterspaced tight. Same voice as the sidebar lockup in
+   the CRM, so a coach who later logs in recognises where they are. */
+.hero {
+  background: var(--black);
+  color: #fff;
+  padding: var(--s7) var(--s5) var(--s8);
+  position: relative;
+  overflow: hidden;
+}
+/* A single hairline of brand purple across the bottom edge. This is the
+   only decoration on the page — no stock photography, no gradient mesh. */
+.hero::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: var(--accent);
+}
+.hero__inner { max-width: 760px; margin: 0 auto; }
+
+.lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
+  text-decoration: none;
+  color: #fff;
+  min-height: 44px;
+  margin-bottom: var(--s6);
+}
+.lockup__mark {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  flex-shrink: 0;
+}
+.lockup__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-md);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.hero__eyebrow {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #b79df5;
+  margin: 0 0 var(--s3);
+}
+.hero__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, 7vw, var(--fs-3xl));
+  line-height: 1.08;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin: 0 0 var(--s4);
+}
+.hero__lede {
+  font-size: var(--fs-md);
+  line-height: 1.65;
+  color: rgba(255,255,255,0.76);
+  max-width: 56ch;
+  margin: 0;
+}
+.hero__note {
+  margin: var(--s5) 0 0;
+  font-size: var(--fs-sm);
+  color: rgba(255,255,255,0.55);
+}
+
+/* ── Form shell ─────────────────────────────────────────────────────── */
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 var(--s5) var(--s9); }
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  padding: var(--s6);
+  margin-top: var(--s5);
+  /* fieldset resets */
+  min-width: 0;
+}
+.section:first-of-type { margin-top: calc(-1 * var(--s6)); }
+
+/* The numbered marker is the recurring motif — it appears once per section
+   and nowhere else, which is what makes it read as a system rather than
+   decoration. */
+.section__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  margin: 0 0 var(--s2);
+  padding: 0;
+}
+.section__num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  color: var(--accent-ink);
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+}
+.section__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-xl);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.section__hint {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  margin: 0 0 var(--s5);
+  max-width: 60ch;
+}
+
+/* ── Fields ─────────────────────────────────────────────────────────── */
+.field { margin-bottom: var(--s5); }
+.field:last-child { margin-bottom: 0; }
+
+.label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  margin-bottom: var(--s2);
+  color: var(--ink);
+}
+.req { color: var(--accent-ink); margin-left: 2px; }
+.opt {
+  color: var(--faint);
+  font-weight: 400;
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  margin-left: var(--s2);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.input, .textarea, .select {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--s3) var(--s4);
+  /* 44px floor on every control — this is the single most common tap-target
+     failure in long forms, because inputs are usually sized by padding alone. */
+  min-height: 48px;
+  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+.textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
+.input:hover, .textarea:hover { border-color: #c4c4c4; }
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.input[aria-invalid='true'], .textarea[aria-invalid='true'] {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+/* ── Choice controls ────────────────────────────────────────────────── */
+.choices { display: grid; gap: var(--s2); }
+.choices--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.choices--days { grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  transition: border-color 200ms var(--ease), background-color 200ms var(--ease);
+}
+.choice:hover { border-color: #c4c4c4; background: var(--surface-2); }
+/* :has() lets the whole tile respond to its own input without a line of JS.
+   Fallback is graceful — without :has() the native checkbox still shows
+   state, the tile just does not tint. */
+.choice:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.choice input {
+  width: 20px; height: 20px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+  margin: 0;
+}
+.choice span { line-height: 1.35; }
+
+/* ── File upload ────────────────────────────────────────────────────── */
+.drop {
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  padding: var(--s5);
+  text-align: center;
+  transition: border-color 200ms var(--ease), background-color 200ms var(--ease);
+}
+.drop.is-over { border-color: var(--accent); background: var(--accent-soft); }
+.drop__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: background-color 200ms var(--ease), color 200ms var(--ease);
+}
+.drop__btn:hover { background: var(--ink); color: #fff; }
+.drop__hint { margin: var(--s3) 0 0; font-size: var(--fs-xs); color: var(--muted); }
+
+.filelist { list-style: none; margin: var(--s3) 0 0; padding: 0; display: grid; gap: var(--s2); }
+.fileitem {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) var(--s2) var(--s2) var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+.fileitem__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fileitem__size { color: var(--faint); font-size: var(--fs-xs); flex-shrink: 0; }
+.fileitem__x {
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  border: none; background: transparent;
+  color: var(--muted); cursor: pointer;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.fileitem__x:hover { color: var(--danger); background: var(--danger-soft); }
+
+/* The .ref / .ref__grid / .btn-ghost rules that lived here styled the
+   References block and its "Add another reference" button. All removed with
+   that section — .btn-ghost had no other user. */
+
+/* ── Errors ─────────────────────────────────────────────────────────── */
+.err {
+  display: block;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+  margin-top: var(--s2);
+  font-weight: 600;
+}
+.err:empty { display: none; }
+
+.summary {
+  border: 1px solid var(--danger);
+  background: var(--danger-soft);
+  border-radius: var(--radius-md);
+  padding: var(--s4) var(--s5);
+  margin-top: var(--s5);
+}
+.summary[hidden] { display: none; }
+.summary h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  margin: 0 0 var(--s2);
+  color: var(--danger);
+}
+.summary ul { margin: 0; padding-left: var(--s5); }
+.summary a { color: var(--danger); }
+
+/* ── Submit ─────────────────────────────────────────────────────────── */
+.actions { margin-top: var(--s6); }
+.btn-primary {
+  width: 100%;
+  min-height: 56px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background-color 200ms var(--ease), transform 200ms var(--ease);
+}
+.btn-primary:hover:not(:disabled) { background: #5b21b6; }
+.btn-primary:active:not(:disabled) { transform: translateY(1px); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.actions__note { text-align: center; font-size: var(--fs-xs); color: var(--muted); margin: var(--s3) 0 0; }
+
+/* ── Success ────────────────────────────────────────────────────────── */
+.done { text-align: center; padding: var(--s8) var(--s5); }
+.done[hidden] { display: none; }
+.done__tick {
+  width: 64px; height: 64px; margin: 0 auto var(--s5);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  display: grid; place-items: center;
+  animation: pop 320ms var(--ease) both;
+}
+.done__title {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: var(--fs-2xl); text-transform: uppercase;
+  letter-spacing: 0.01em; margin: 0 0 var(--s3);
+}
+.done__body { color: var(--muted); max-width: 48ch; margin: 0 auto var(--s5); }
+.done__ref {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-full); padding: var(--s2) var(--s5);
+}
+
+@keyframes pop { from { opacity: 0; transform: scale(0.86); } to { opacity: 1; transform: scale(1); } }
+
+/* Sections fade up as they enter — 260ms, ease-out, nothing bouncy. */
+.reveal { opacity: 0; transform: translateY(10px); }
+.reveal.in { opacity: 1; transform: none; transition: opacity 260ms var(--ease), transform 260ms var(--ease); }
+
+.sr {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ── Mobile: rebuilt, not squeezed ──────────────────────────────────── */
+@media (max-width: 640px) {
+  .hero { padding: var(--s6) var(--s4) var(--s7); }
+  .wrap { padding: 0 var(--s4) var(--s8); }
+  .section { padding: var(--s5) var(--s4); border-radius: var(--radius-md); }
+  /* Two-up choice grids collapse to one column: a 50%-width tile at 375px
+     leaves ~150px for labels like "Strength & Conditioning", which wraps to
+     three lines and breaks the row rhythm. */
+  .choices--2 { grid-template-columns: 1fr; }
+  .section__title { font-size: var(--fs-lg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+</style>
+</head>
+
+<body>
+
+<header class="hero">
+  <div class="hero__inner">
+    <a class="lockup" href="/">
+      <span class="lockup__mark" aria-hidden="true">M</span>
+      <span class="lockup__name">Made Running</span>
+    </a>
+    <p class="hero__eyebrow">Coach application</p>
+    <h1 class="hero__title">Coach at Made&nbsp;Running</h1>
+    <p class="hero__lede">
+      We're building a coaching team that reflects the club — people who lead
+      from the front, look after the back of the pack, and mean it when they say
+      no one gets left behind.
+    </p>
+    <p class="hero__note">Takes about 10 minutes. Fields marked <span style="color:#b79df5">*</span> are required.</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- novalidate: the browser's native bubbles cannot be styled, appear one at
+       a time, and vanish on scroll. We validate in JS so every error is visible
+       at once, styled, and announced. -->
+  <form id="form" novalidate>
+
+    <!-- Error summary. Standard a11y pattern: on a failed submit this is
+         populated, revealed and focused, so a screen-reader user hears the
+         whole list instead of hunting for red text. -->
+    <div class="summary" id="summary" hidden tabindex="-1" role="alert">
+      <h2 id="summary-title">Please check the following</h2>
+      <ul id="summary-list"></ul>
+    </div>
+
+    <!-- ─── 1. Personal details ─────────────────────────────────────── -->
+    <fieldset class="section reveal">
+      <legend class="sr">Personal details</legend>
+      <div class="section__head" aria-hidden="true">
+        <span class="section__num">01</span>
+        <h2 class="section__title">Personal details</h2>
+      </div>
+      <p class="section__hint">How we reach you if we want to talk.</p>
+
+      <div class="field">
+        <label class="label" for="fullName">Full name<span class="req">*</span></label>
+        <input class="input" id="fullName" name="fullName" type="text" autocomplete="name" required />
+        <span class="err" id="err-fullName" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <label class="label" for="email">Email address<span class="req">*</span></label>
+        <input class="input" id="email" name="email" type="email" autocomplete="email" inputmode="email" required />
+        <span class="err" id="err-email" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <label class="label" for="phone">Phone number<span class="req">*</span></label>
+        <input class="input" id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required />
+        <span class="err" id="err-phone" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <label class="label" for="location">Location / area<span class="req">*</span></label>
+        <input class="input" id="location" name="location" type="text" placeholder="e.g. Hackney, East London" required />
+        <span class="err" id="err-location" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <label class="label" for="website">Instagram, portfolio or website<span class="opt">optional</span></label>
+        <input class="input" id="website" name="website" type="url" inputmode="url" placeholder="https://instagram.com/yourhandle" />
+        <span class="err" id="err-website" aria-live="polite"></span>
+      </div>
+    </fieldset>
+
+    <!-- ─── 2. Class / discipline ───────────────────────────────────── -->
+    <fieldset class="section reveal">
+      <legend class="sr">Class and discipline</legend>
+      <div class="section__head" aria-hidden="true">
+        <span class="section__num">02</span>
+        <h2 class="section__title">Class &amp; discipline</h2>
+      </div>
+      <p class="section__hint">What you want to lead, and when you can lead it.</p>
+
+      <div class="field">
+        <fieldset style="border:0;padding:0;margin:0;min-width:0">
+          <legend class="label" style="padding:0">Discipline(s) you want to teach<span class="req">*</span></legend>
+          <div class="choices choices--2" id="disciplines">
+            <label class="choice"><input type="checkbox" name="disciplines" value="Running Coaching" /><span>Running coaching</span></label>
+            <label class="choice"><input type="checkbox" name="disciplines" value="Personal Training 1:1" /><span>Personal training 1:1</span></label>
+            <label class="choice"><input type="checkbox" name="disciplines" value="Yoga" /><span>Yoga</span></label>
+            <label class="choice"><input type="checkbox" name="disciplines" value="Pilates" /><span>Pilates</span></label>
+            <label class="choice"><input type="checkbox" name="disciplines" value="Strength &amp; Conditioning" /><span>Strength &amp; conditioning</span></label>
+            <label class="choice"><input type="checkbox" name="disciplines" value="HIIT" /><span>HIIT</span></label>
+            <label class="choice"><input type="checkbox" name="disciplines" value="Recovery/Mobility" /><span>Recovery / mobility</span></label>
+            <label class="choice"><input type="checkbox" name="disciplines" value="Other" id="discOther" /><span>Other</span></label>
+          </div>
+          <span class="err" id="err-disciplines" aria-live="polite"></span>
+        </fieldset>
+      </div>
+
+      <!-- Revealed only when Other is ticked. Kept in the DOM (hidden) rather
+           than created on the fly so the label association never breaks. -->
+      <div class="field" id="otherWrap" hidden>
+        <label class="label" for="disciplineOther">Tell us what "other" is<span class="req">*</span></label>
+        <input class="input" id="disciplineOther" name="disciplineOther" type="text" placeholder="e.g. Breathwork, trail skills" />
+        <span class="err" id="err-disciplineOther" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <fieldset style="border:0;padding:0;margin:0;min-width:0">
+          <legend class="label" style="padding:0">Preferred format<span class="req">*</span></legend>
+          <div class="choices choices--2">
+            <label class="choice"><input type="radio" name="format" value="Group classes" /><span>Group classes</span></label>
+            <label class="choice"><input type="radio" name="format" value="1:1 sessions" /><span>1:1 sessions</span></label>
+            <label class="choice"><input type="radio" name="format" value="Both" /><span>Both</span></label>
+          </div>
+          <span class="err" id="err-format" aria-live="polite"></span>
+        </fieldset>
+      </div>
+
+      <div class="field">
+        <fieldset style="border:0;padding:0;margin:0;min-width:0">
+          <legend class="label" style="padding:0">Which days can you usually cover?<span class="opt">optional</span></legend>
+          <div class="choices choices--days">
+            <label class="choice"><input type="checkbox" name="days" value="Mon" /><span>Monday</span></label>
+            <label class="choice"><input type="checkbox" name="days" value="Tue" /><span>Tuesday</span></label>
+            <label class="choice"><input type="checkbox" name="days" value="Wed" /><span>Wednesday</span></label>
+            <label class="choice"><input type="checkbox" name="days" value="Thu" /><span>Thursday</span></label>
+            <label class="choice"><input type="checkbox" name="days" value="Fri" /><span>Friday</span></label>
+            <label class="choice"><input type="checkbox" name="days" value="Sat" /><span>Saturday</span></label>
+            <label class="choice"><input type="checkbox" name="days" value="Sun" /><span>Sunday</span></label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="field">
+        <label class="label" for="availability">Anything we should know about your times?<span class="opt">optional</span></label>
+        <textarea class="textarea" id="availability" name="availability" placeholder="e.g. Weekday mornings before 9am, all day Saturday. Away most of August."></textarea>
+      </div>
+    </fieldset>
+
+    <!-- ─── 3. Experience ──────────────────────────────────────────── -->
+    <fieldset class="section reveal">
+      <legend class="sr">Experience</legend>
+      <div class="section__head" aria-hidden="true">
+        <span class="section__num">03</span>
+        <h2 class="section__title">Experience</h2>
+      </div>
+      <p class="section__hint">We care more about how you coach than how long you've done it.</p>
+
+      <div class="field">
+        <label class="label" for="years">Years of experience<span class="req">*</span></label>
+        <input class="input" id="years" name="years" type="number" min="0" max="60" step="1" inputmode="numeric" style="max-width:180px" required />
+        <span class="err" id="err-years" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <label class="label" for="priorExperience">Prior coaching or teaching experience<span class="req">*</span></label>
+        <textarea class="textarea" id="priorExperience" name="priorExperience" placeholder="Where you've coached, who with, what kind of sessions." required></textarea>
+        <span class="err" id="err-priorExperience" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <label class="label" for="philosophy">Your coaching style &amp; philosophy<span class="req">*</span></label>
+        <textarea class="textarea" id="philosophy" name="philosophy" placeholder="How do you run a session? How do you handle the person finishing last?" required></textarea>
+        <span class="err" id="err-philosophy" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <fieldset style="border:0;padding:0;margin:0;min-width:0">
+          <legend class="label" style="padding:0">Who have you mostly worked with?<span class="opt">optional</span></legend>
+          <div class="choices choices--2">
+            <label class="choice"><input type="radio" name="level" value="Beginners" /><span>Beginners</span></label>
+            <label class="choice"><input type="radio" name="level" value="Competitive athletes" /><span>Competitive athletes</span></label>
+            <label class="choice"><input type="radio" name="level" value="Both" /><span>Both</span></label>
+          </div>
+        </fieldset>
+      </div>
+    </fieldset>
+
+    <!-- ─── 4. Qualifications ──────────────────────────────────────── -->
+    <fieldset class="section reveal">
+      <legend class="sr">Qualifications and certifications</legend>
+      <div class="section__head" aria-hidden="true">
+        <span class="section__num">04</span>
+        <h2 class="section__title">Qualifications</h2>
+      </div>
+      <p class="section__hint">Anything you can't upload now, you can send later — tell us and we'll chase it.</p>
+
+      <div class="field">
+        <label class="label" for="certifications">Certifications you hold<span class="req">*</span></label>
+        <textarea class="textarea" id="certifications" name="certifications" placeholder="e.g. UKA Coach in Running Fitness (CiRF), Level 3 PT, RYT-200 — with awarding body and year." required></textarea>
+        <span class="err" id="err-certifications" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <span class="label" id="certFilesLabel">Upload certificate(s)<span class="opt">optional — PDF, JPG or PNG</span></span>
+        <div class="drop" data-drop="certFiles">
+          <button type="button" class="drop__btn" data-open="certFiles">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Choose files
+          </button>
+          <p class="drop__hint">or drag them here — up to 5 files, 10&nbsp;MB each</p>
+          <input class="sr" type="file" id="certFiles" name="certFiles" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple aria-labelledby="certFilesLabel" />
+        </div>
+        <ul class="filelist" id="list-certFiles"></ul>
+        <span class="err" id="err-certFiles" aria-live="polite"></span>
+      </div>
+
+      <!-- First aid / CPR and liability insurance used to sit here as two
+           required Yes/No pairs, with a conditional insurance-certificate
+           upload underneath the second one. All three were removed at the
+           club's request.
+
+           If they ever come back, note that they are compliance questions, not
+           screening questions: the honest place for them is AFTER a coach is
+           offered a trial, not on the first-contact form. Asking an outsider
+           to declare they have no insurance is a good way to make them close
+           the tab. The payload keys `firstAidCertified` and
+           `liabilityInsurance` are gone too, so anything consuming the JSON
+           must not assume they exist. -->
+
+      <div class="field">
+        <label class="label" for="specialised">Specialised training<span class="opt">optional</span></label>
+        <textarea class="textarea" id="specialised" name="specialised" placeholder="e.g. pre/post-natal, strength for runners, injury rehab, coaching neurodivergent athletes."></textarea>
+      </div>
+    </fieldset>
+
+    <!-- ─── 5. Additional info ─────────────────────────────────────── -->
+    <fieldset class="section reveal">
+      <legend class="sr">Additional information</legend>
+      <div class="section__head" aria-hidden="true">
+        <span class="section__num">05</span>
+        <h2 class="section__title">About you</h2>
+      </div>
+      <p class="section__hint">The part we actually read twice.</p>
+
+      <div class="field">
+        <label class="label" for="why">Why do you want to coach with Made Running?<span class="req">*</span></label>
+        <textarea class="textarea" id="why" name="why" placeholder="Be honest. We're not looking for a cover letter." required></textarea>
+        <span class="err" id="err-why" aria-live="polite"></span>
+      </div>
+
+      <!-- A "References" block (up to two name/contact pairs, added one at a
+           time) sat here and was removed at the club's request. The payload
+           key `additional.references` went with it, so anything reading the
+           JSON must not assume the array exists.
+
+           Not to be confused with `#doneRef` on the success panel below —
+           that is the applicant's reference NUMBER and is still very much in
+           use. -->
+
+      <div class="field">
+        <label class="label" for="anythingElse">Anything else?<span class="opt">optional</span></label>
+        <textarea class="textarea" id="anythingElse" name="anythingElse"></textarea>
+      </div>
+    </fieldset>
+
+    <!-- ─── 6. Consent ─────────────────────────────────────────────── -->
+    <fieldset class="section reveal">
+      <legend class="sr">Consent</legend>
+      <div class="section__head" aria-hidden="true">
+        <span class="section__num">06</span>
+        <h2 class="section__title">Consent</h2>
+      </div>
+      <p class="section__hint">Both boxes are required before we can accept an application.</p>
+
+      <div class="field">
+        <div class="choices">
+          <label class="choice"><input type="checkbox" id="consentAccurate" name="consentAccurate" /><span>I confirm the information provided is accurate.</span></label>
+        </div>
+        <span class="err" id="err-consentAccurate" aria-live="polite"></span>
+      </div>
+
+      <div class="field">
+        <div class="choices">
+          <label class="choice"><input type="checkbox" id="consentData" name="consentData" /><span>I consent to Made Running storing my data for recruitment purposes.</span></label>
+        </div>
+        <span class="err" id="err-consentData" aria-live="polite"></span>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" class="btn-primary" id="submitBtn">Send application</button>
+      <p class="actions__note">We reply to every application, usually within a week.</p>
+    </div>
+  </form>
+
+  <!-- Success panel. Replaces the form rather than sitting above it, so there
+       is no way to double-submit by scrolling back down. -->
+  <section class="done" id="done" hidden tabindex="-1" aria-live="polite">
+    <div class="done__tick" aria-hidden="true">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h2 class="done__title">Application received</h2>
+    <p class="done__body">
+      Thanks — that's with the Made Running team. We read every one and we'll
+      come back to you, usually within a week.
+    </p>
+    <p class="done__ref" id="doneRef"></p>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Config
+  // ═══════════════════════════════════════════════════════════════════
+
+  // TODO(CRM): point this at the real endpoint.
+  // Expects POST application/json, responds 2xx on success.
+  var ENDPOINT = '/api/coach-applications';
+
+  var MAX_FILE_BYTES = 10 * 1024 * 1024;  // 10 MB per file
+  var MAX_FILES = 5;
+  var ACCEPTED = ['application/pdf', 'image/jpeg', 'image/png'];
+
+  var form = document.getElementById('form');
+  var summary = document.getElementById('summary');
+  var summaryList = document.getElementById('summary-list');
+  var doneEl = document.getElementById('done');
+  var submitBtn = document.getElementById('submitBtn');
+
+  // Files live here, not in the <input>. A file input's FileList is
+  // read-only, so "remove one of the four I picked" is impossible if the
+  // input is the source of truth — you would have to clear all four.
+  var files = { certFiles: [] };
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Conditional fields
+  // ═══════════════════════════════════════════════════════════════════
+
+  var discOther = $('discOther');
+  var otherWrap = $('otherWrap');
+  discOther.addEventListener('change', function () {
+    otherWrap.hidden = !discOther.checked;
+    if (discOther.checked) $('disciplineOther').focus();
+    else clearError('disciplineOther');
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // File handling
+  // ═══════════════════════════════════════════════════════════════════
+
+  function humanSize(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1024 * 1024) return Math.round(b / 1024) + ' KB';
+    return (b / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function acceptFiles(key, incoming) {
+    var errs = [];
+    var slots = MAX_FILES - files[key].length;
+    Array.prototype.forEach.call(incoming, function (f) {
+      if (slots <= 0) { errs.push(f.name + ' was not added — ' + MAX_FILES + ' files maximum.'); return; }
+      // accept="" is only a picker filter. Drag-drop, paste and "All Files"
+      // all walk straight past it, so the real check happens here.
+      var okType = ACCEPTED.indexOf(f.type) !== -1 || /\.(pdf|jpe?g|png)$/i.test(f.name);
+      if (!okType) { errs.push(f.name + ' is not a PDF, JPG or PNG.'); return; }
+      if (f.size > MAX_FILE_BYTES) { errs.push(f.name + ' is ' + humanSize(f.size) + ' — the limit is 10 MB.'); return; }
+      files[key].push(f);
+      slots--;
+    });
+    renderFiles(key);
+    setError(key, errs.join(' '));
+  }
+
+  function renderFiles(key) {
+    var ul = $('list-' + key);
+    ul.innerHTML = '';
+    files[key].forEach(function (f, idx) {
+      var li = document.createElement('li');
+      li.className = 'fileitem';
+      var name = document.createElement('span');
+      name.className = 'fileitem__name';
+      name.textContent = f.name;
+      var size = document.createElement('span');
+      size.className = 'fileitem__size';
+      size.textContent = humanSize(f.size);
+      var x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'fileitem__x';
+      x.setAttribute('aria-label', 'Remove ' + f.name);
+      x.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      x.addEventListener('click', function () {
+        files[key].splice(idx, 1);
+        renderFiles(key);
+        clearError(key);
+      });
+      li.appendChild(name); li.appendChild(size); li.appendChild(x);
+      ul.appendChild(li);
+    });
+  }
+
+  // Still a list of one. Keeping the loop rather than inlining it: the shape
+  // of "every file input on this form" is the thing being expressed, and a
+  // second upload is one string away from working again.
+  ['certFiles'].forEach(function (key) {
+    var input = $(key);
+    input.addEventListener('change', function () {
+      acceptFiles(key, input.files);
+      // Reset, or picking the SAME file twice fires no change event.
+      input.value = '';
+    });
+
+    var drop = document.querySelector('[data-drop="' + key + '"]');
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('is-over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('is-over'); });
+    });
+    drop.addEventListener('drop', function (e) {
+      if (e.dataTransfer && e.dataTransfer.files) acceptFiles(key, e.dataTransfer.files);
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-open]'), function (btn) {
+    btn.addEventListener('click', function () { $(btn.getAttribute('data-open')).click(); });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Validation
+  // ═══════════════════════════════════════════════════════════════════
+
+  function setError(name, msg) {
+    var el = $('err-' + name);
+    if (el) el.textContent = msg || '';
+    var input = $(name);
+    if (input && input.setAttribute) {
+      if (msg) input.setAttribute('aria-invalid', 'true');
+      else input.removeAttribute('aria-invalid');
+    }
+  }
+  function clearError(name) { setError(name, ''); }
+
+  function checkedValues(name) {
+    return Array.prototype.map.call(
+      document.querySelectorAll('input[name="' + name + '"]:checked'),
+      function (i) { return i.value; }
+    );
+  }
+  function radioValue(name) {
+    var el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : '';
+  }
+
+  function validate() {
+    var problems = [];
+
+    function req(id, label, msg) {
+      var v = ($(id).value || '').trim();
+      if (!v) { setError(id, msg || 'This is required.'); problems.push({ id: id, label: label }); return false; }
+      clearError(id); return true;
+    }
+
+    req('fullName', 'Full name');
+
+    if (req('email', 'Email address')) {
+      // Deliberately loose. Strict RFC-5322 regexes reject valid addresses
+      // (apostrophes, new TLDs) and the only real test is a delivered email.
+      var email = $('email').value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setError('email', 'That does not look like an email address.');
+        problems.push({ id: 'email', label: 'Email address' });
+      }
+    }
+
+    if (req('phone', 'Phone number')) {
+      var digits = $('phone').value.replace(/[^0-9]/g, '');
+      if (digits.length < 7) {
+        setError('phone', 'That does not look like a phone number.');
+        problems.push({ id: 'phone', label: 'Phone number' });
+      }
+    }
+
+    req('location', 'Location');
+
+    // Optional, but if they typed something it should be a URL.
+    var site = $('website').value.trim();
+    if (site && !/^https?:\/\/.+\..+/i.test(site)) {
+      setError('website', 'Include the full address, starting with https://');
+      problems.push({ id: 'website', label: 'Website' });
+    } else clearError('website');
+
+    if (checkedValues('disciplines').length === 0) {
+      setError('disciplines', 'Pick at least one discipline.');
+      problems.push({ id: 'disciplines', label: 'Disciplines' });
+    } else clearError('disciplines');
+
+    if (discOther.checked && !$('disciplineOther').value.trim()) {
+      setError('disciplineOther', 'Tell us which discipline.');
+      problems.push({ id: 'disciplineOther', label: 'Other discipline' });
+    } else clearError('disciplineOther');
+
+    if (!radioValue('format')) {
+      setError('format', 'Choose a format.');
+      problems.push({ id: 'format', label: 'Preferred format' });
+    } else clearError('format');
+
+    var yrs = $('years').value.trim();
+    if (yrs === '' || isNaN(Number(yrs)) || Number(yrs) < 0) {
+      setError('years', 'Enter a number of years (0 is fine).');
+      problems.push({ id: 'years', label: 'Years of experience' });
+    } else clearError('years');
+
+    req('priorExperience', 'Prior experience');
+    req('philosophy', 'Coaching philosophy');
+    req('certifications', 'Certifications');
+
+    req('why', 'Why Made Running');
+
+    if (!$('consentAccurate').checked) {
+      setError('consentAccurate', 'Please confirm your information is accurate.');
+      problems.push({ id: 'consentAccurate', label: 'Accuracy confirmation' });
+    } else clearError('consentAccurate');
+
+    if (!$('consentData').checked) {
+      setError('consentData', 'We need your consent to store the application.');
+      problems.push({ id: 'consentData', label: 'Data consent' });
+    } else clearError('consentData');
+
+    return problems;
+  }
+
+  function showSummary(problems) {
+    summaryList.innerHTML = '';
+    problems.forEach(function (p) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = '#' + p.id;
+      a.textContent = p.label;
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        var t = $(p.id) || document.querySelector('[name="' + p.id + '"]');
+        if (t) { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); t.focus({ preventScroll: true }); }
+      });
+      li.appendChild(a);
+      summaryList.appendChild(li);
+    });
+    summary.hidden = false;
+    summary.focus();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Payload
+  // ═══════════════════════════════════════════════════════════════════
+
+  function toBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      // Strip the "data:application/pdf;base64," prefix — the mime type is
+      // already carried as its own field, and most server-side decoders
+      // choke on the data-URL header.
+      r.onload = function () { resolve(String(r.result).split(',')[1] || ''); };
+      r.onerror = function () { reject(new Error('Could not read ' + file.name)); };
+      r.readAsDataURL(file);
+    });
+  }
+
+  async function buildPayload() {
+    async function pack(list) {
+      var packed = [];
+      for (var i = 0; i < list.length; i++) {
+        packed.push({
+          filename: list[i].name,
+          mimeType: list[i].type || 'application/octet-stream',
+          sizeBytes: list[i].size,
+          data: await toBase64(list[i]),
+        });
+      }
+      return packed;
+    }
+
+    return {
+      // Versioned from day one: this payload will change, and the CRM will
+      // need to tell an old submission from a new one.
+      schemaVersion: 1,
+      submittedAt: new Date().toISOString(),
+      source: 'coach-application-form',
+
+      personalDetails: {
+        fullName: $('fullName').value.trim(),
+        email: $('email').value.trim(),
+        phone: $('phone').value.trim(),
+        location: $('location').value.trim(),
+        website: $('website').value.trim() || null,
+      },
+      discipline: {
+        disciplines: checkedValues('disciplines'),
+        disciplineOther: discOther.checked ? $('disciplineOther').value.trim() : null,
+        preferredFormat: radioValue('format'),
+        availableDays: checkedValues('days'),
+        availabilityNotes: $('availability').value.trim() || null,
+      },
+      experience: {
+        years: Number($('years').value),
+        priorExperience: $('priorExperience').value.trim(),
+        philosophy: $('philosophy').value.trim(),
+        levelWorkedWith: radioValue('level') || null,
+      },
+      qualifications: {
+        certifications: $('certifications').value.trim(),
+        specialisedTraining: $('specialised').value.trim() || null,
+        certificateFiles: await pack(files.certFiles),
+      },
+      additional: {
+        whyMadeRunning: $('why').value.trim(),
+        anythingElse: $('anythingElse').value.trim() || null,
+      },
+      consent: {
+        informationAccurate: $('consentAccurate').checked,
+        dataStorageForRecruitment: $('consentData').checked,
+        // Consent is only meaningful with a timestamp — "they ticked a box"
+        // is not a record, "they ticked a box at 09:14 on 24 Aug" is.
+        consentedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Submit
+  // ═══════════════════════════════════════════════════════════════════
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    summary.hidden = true;
+
+    var problems = validate();
+    if (problems.length) { showSummary(problems); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
+
+    // ── Stage 1: build the payload ────────────────────────────────────
+    // Kept OUT of the network try/catch on purpose. If a file cannot be read
+    // this is a real, local failure and the applicant must be told — folding
+    // it into the same catch as "endpoint not wired yet" would show a success
+    // screen to someone whose certificate never made it into the payload.
+    var payload;
+    try {
+      payload = await buildPayload();
+    } catch (buildErr) {
+      console.error('[coach-application] could not package the form.', buildErr);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Send application';
+      showFormError(
+        'We could not read one of your uploaded files. Remove it and try again, ' +
+        'or send it to us by email.'
+      );
+      return;
+    }
+
+    // ── Stage 2: send it ──────────────────────────────────────────────
+    try {
+      // TODO(CRM): wire this to the real API.
+      //   - Auth: add the tenant key / bearer token header the CRM expects.
+      //   - Large files: base64 inflates by ~33%, so 5 x 10 MB arrives as
+      //     roughly 67 MB of JSON. If the CRM caps request bodies (Vercel
+      //     functions cap at 4.5 MB), switch to multipart/form-data, or
+      //     upload files to storage first and post only the resulting paths.
+      //   - Idempotency: send a client-generated UUID so a double-tap on a
+      //     flaky connection does not create two applications.
+      var res = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Server responded ' + res.status);
+      succeed(payload);
+    } catch (netErr) {
+      // DEMO FALLBACK. Until /api/coach-applications exists this always runs.
+      // It confirms anyway so the journey can be demonstrated end to end, and
+      // logs the payload as proof the packaging worked.
+      // TODO(CRM): DELETE this fallback the day the endpoint goes live, or a
+      // genuine outage will be silently swallowed and applications will be
+      // lost while everyone sees a success screen.
+      console.warn('[coach-application] POST failed — endpoint not wired yet.', netErr);
+      console.info('[coach-application] payload that would have been sent:', payload);
+      succeed(payload);
+    }
+  });
+
+  // A form-level failure message, reusing the error-summary styling so there
+  // is one visual language for "something is wrong" on this page.
+  function showFormError(msg) {
+    summaryList.innerHTML = '';
+    document.getElementById('summary-title').textContent = 'We could not send this';
+    var li = document.createElement('li');
+    li.textContent = msg;
+    summaryList.appendChild(li);
+    summary.hidden = false;
+    summary.focus();
+  }
+
+  function succeed(payload) {
+    form.hidden = true;
+    doneEl.hidden = false;
+    var ref = 'MR-' + new Date().getFullYear() + '-' +
+      Math.random().toString(36).slice(2, 7).toUpperCase();
+    $('doneRef').textContent = 'Your reference: ' + ref;
+    doneEl.focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Reveal on scroll
+  // ═══════════════════════════════════════════════════════════════════
+
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var sections = document.querySelectorAll('.reveal');
+  if (reduced || !('IntersectionObserver' in window)) {
+    // No observer, no motion preference — show everything immediately.
+    // A reveal effect that never fires is a blank page, which is worse
+    // than no effect at all.
+    Array.prototype.forEach.call(sections, function (s) { s.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+    Array.prototype.forEach.call(sections, function (s) { io.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>

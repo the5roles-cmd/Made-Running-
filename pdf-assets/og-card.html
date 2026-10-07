@@ -1,0 +1,128 @@
+<!doctype html>
+<!--
+  Source for /public/og-image.png (1200x630).
+
+  Rendered with headless Chrome rather than cropped with `sips`, because every
+  source photograph we have is portrait (720x1280 / 2310x2887 / 2400x2975) and
+  a landscape social card cut straight out of one of those throws away most of
+  the frame. A split card sidesteps that: the photo keeps a near-portrait
+  aperture on the right, and the left half carries the words.
+
+  Re-render with:
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --screenshot=public/og-image.png \
+      --window-size=1200,630 --default-background-color=00000000 \
+      --hide-scrollbars pdf-assets/og-card.html
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+
+  body {
+    display: grid;
+    grid-template-columns: 1fr 470px;
+    background: #121110;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Left: the words ─────────────────────────────────────── */
+  .copy {
+    padding: 68px 56px 62px 72px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #fff;
+  }
+
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .mark {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    background: #fff;
+    color: #121110;
+    display: grid; place-items: center;
+    font-size: 24px; font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  .wordmark { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+
+  h1 {
+    font-size: 60px;
+    font-weight: 600;
+    line-height: 1.04;
+    letter-spacing: -0.033em;
+    margin: 34px 0 22px;
+  }
+  h1 em { font-style: italic; font-weight: 700; }
+
+  .sub {
+    font-size: 20px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.6);
+    max-width: 30ch;
+  }
+
+  .foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.42);
+  }
+  .foot .dot {
+    width: 5px; height: 5px; border-radius: 999px;
+    background: rgba(255,255,255,0.34);
+  }
+
+  /* ── Right: the photograph ───────────────────────────────── */
+  .frame { position: relative; overflow: hidden; }
+  .frame img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: 50% 34%;
+  }
+  /* Feather the seam so the photo reads as part of the card, not pasted on. */
+  .frame::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, #121110 0%, rgba(18,17,16,0.55) 12%, rgba(18,17,16,0) 42%);
+  }
+</style>
+</head>
+<body>
+  <div class="copy">
+    <div class="brand">
+      <div class="mark">M</div>
+      <div class="wordmark">Made Running</div>
+    </div>
+
+    <div>
+      <h1>Own the platform<br />your community<br /><em>runs on.</em></h1>
+      <!-- "built for Made Running" was the tail here; it became redundant once
+           the wordmark above started saying Made Running. -->
+      <p class="sub">One owned system for runners, sessions, volunteers and partnerships.</p>
+    </div>
+
+    <div class="foot">
+      <span>Built once</span>
+      <span class="dot"></span>
+      <span>Owned forever</span>
+    </div>
+  </div>
+
+  <div class="frame">
+    <img src="../public/img/hero-crew-1100.jpg" alt="" />
+  </div>
+</body>
+</html>
