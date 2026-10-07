@@ -401,17 +401,9 @@ const NAV_GROUPS_MADERUNNING = [
   // The AI did NOT go with the Assistant page: "Ask Made Running" in the
   // topbar opens the slide-over (ChatPanel), which was always the way in
   // that people actually used.
-  {
-    label: 'Store',
-    // One item, and the group label still differs from it deliberately — a
-    // group called "Shop" containing an item called "Shop" reads as a
-    // stutter in the rail.
-    //
-    // Shop is what a member BUYS, so it is not staff-gated. Its old
-    // counterpart Sales — what the club SOLD — is gone with the rest of the
-    // business surface.
-    items: [{ to: '/app/shop', label: 'Shop', icon: 'ShoppingBag' }],
-  },
+  // The "Store" group (one item → /app/shop) lived here — removed when the
+  // club disabled the shop (see the note in App.jsx). The route is gone
+  // too, so a rail item would have pointed at the /app catch-all.
   {
     label: 'Intelligence',
     items: [{ to: '/app/academy', label: 'Academy', icon: 'GraduationCap' }],

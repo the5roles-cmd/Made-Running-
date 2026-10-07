@@ -33,7 +33,6 @@ const RecordDetail = lazy(() => import('./pages/RecordDetail'))
 const Academy = lazy(() => import('./pages/Academy'))
 const Course = lazy(() => import('./pages/Course'))
 const Events = lazy(() => import('./pages/Events'))
-const Shop = lazy(() => import('./pages/Shop'))
 const Settings = lazy(() => import('./pages/Settings'))
 const Community = lazy(() => import('./pages/Community'))
 const AddFriend = lazy(() => import('./pages/AddFriend'))
@@ -62,12 +61,14 @@ const ClassPage = lazy(() => import('./pages/ClassPage'))
 // boundary for the same third one.
 const Coaches = lazy(() => import('./pages/Coaches'))
 
-// The PUBLIC shop door. Lazy for the ClassPage reasons (not the pitch page;
-// a visitor to / must not pay for the storefront chunk) and it needs its own
-// Suspense boundary out here for the same third one. Note it wraps the SAME
-// lazy Shop above — Vite gives Shop one chunk however many routes import it,
-// so the member door and this one download identical bytes.
-const ShopPublic = lazy(() => import('./pages/ShopPublic'))
+// ── The shop is DISABLED at the club's instruction (Oct 2026) ────────
+// Both doors are closed: the public /shop route and the member /app/shop
+// route are gone, along with every link that pointed at them (Landing's
+// quick card + "Shop Now" CTA, the /start door, the sidebar "Store" group).
+// The code is NOT deleted — Shop.jsx, ShopPublic.jsx, lib/products.js and
+// api/checkout.js all stay on disk, so re-opening is: restore the two lazy
+// imports, the two routes, and the four links. Unmatched /shop now falls to
+// the root catch-all (→ /) and /app/shop to the /app catch-all (→ /app).
 
 // Shared fallback for the two public lazy routes. Inline styles, NOT a
 // className — each page ships its own CSS in a <style> tag inside its own
@@ -148,19 +149,9 @@ export default function App() {
           </Suspense>
         }
       />
-      {/* ── The public shop ─────────────────────────────────────────────
-          No auth: buying a tee is not a membership question, and the landing
-          page's "Shop Now" CTA points here. The member-facing mount at
-          /app/shop below stays — same component, two doors; see
-          ShopPublic.jsx for why that is a wrapper and not a copy. */}
-      <Route
-        path="/shop"
-        element={
-          <Suspense fallback={<PublicBoot />}>
-            <ShopPublic />
-          </Suspense>
-        }
-      />
+      {/* The /shop route lived here — removed with the shop (see the
+          disabled-shop note above the lazy imports). A typed /shop URL now
+          falls through to the root catch-all and lands on the homepage. */}
       {/* Public on purpose. The recovery link carries its session in the URL
           fragment; putting this behind RequireAuth would redirect to /login
           before supabase-js has parsed it, burning a single-use link. */}
@@ -200,10 +191,10 @@ export default function App() {
         <Route path="events" element={<Events />} />
         <Route path="community" element={<Community />} />
         <Route path="add-friend" element={<AddFriend />} />
-        {/* Club kit. Member-visible on purpose: buying the shirt is part of
-            being in the club, not an admin function. Its counterpart
-            /app/sales — what the club SOLD — is staff-gated below. */}
-        <Route path="shop" element={<Shop />} />
+        {/* /app/shop lived here — removed with the shop (see the
+            disabled-shop note above). The /app catch-all below sends the
+            old URL back to /app, inside the shell, not out to the
+            marketing page. */}
         <Route path="academy" element={<Academy />} />
         <Route path="academy/:id" element={<Course />} />
         <Route path="settings" element={<Settings />} />

@@ -312,6 +312,26 @@ export default function BookGym() {
     return classesBySlug?.[cls?.dbSlug]?.price_pennies ?? HUB_PLACEHOLDER_PRICE_PENNIES
   }
 
+  // ── Coach payment policy: pay on arrival ONLY ────────────────────
+  // The club's instruction: every class Jade coaches is paid at the door —
+  // no online option is offered on any of them. The rule follows the COACH,
+  // not a list of class slugs, so adding Jade to a new class or moving her
+  // off one changes the payment options with no code edit here.
+  //
+  // Matched on the resolved coach name — database coach_name first, local
+  // timetable second — the exact order every other coach fact on this page
+  // resolves in (see the coach panel), so the database and this rule can
+  // never disagree about who is teaching.
+  //
+  // Lowercased once per entry: 'Jade' in the DB, 'jade' here, same person.
+  const ARRIVAL_ONLY_COACHES = ['jade']
+  function isArrivalOnly(cls) {
+    const name = (classesBySlug?.[cls?.dbSlug]?.coach_name || cls?.coach || '')
+      .trim()
+      .toLowerCase()
+    return ARRIVAL_ONLY_COACHES.includes(name)
+  }
+
   function startBooking(cls) {
     setActive(cls)
     setFormErr('')
@@ -345,7 +365,10 @@ export default function BookGym() {
       p_email: email.trim(),
       p_phone: phone.trim() || null,
       p_places: bookedFor === 'group' ? places : 1,
-      p_payment_method: payMethod,
+      // Coerced, not trusted: an arrival-only class records on_arrival no
+      // matter what the state says. The online radio is never rendered for
+      // these classes, so this is defence, not a code path.
+      p_payment_method: isArrivalOnly(active) ? 'on_arrival' : payMethod,
     })
     setBusy(false)
     if (error || !data?.ok) {
@@ -375,6 +398,11 @@ export default function BookGym() {
   async function submitBooking(e) {
     e.preventDefault()
     if (busy || !active) return
+    // Same coercion as the waitlist: an arrival-only class books as
+    // on_arrival whatever the state claims. Everything below — the RPC,
+    // the pay-link decision, both confirmation screens — reads THIS,
+    // never payMethod directly, so one line enforces the policy end to end.
+    const method = isArrivalOnly(active) ? 'on_arrival' : payMethod
     setFormErr('')
     if (!fullName.trim()) {
       setFormErr('Please tell us your name so the coach knows who to expect.')
@@ -412,7 +440,7 @@ export default function BookGym() {
           p_booked_for: bookedFor,
           p_attendee_name: bookedFor === 'someone_else' ? attendeeName.trim() : null,
           p_places: bookedFor === 'group' ? places : 1,
-          p_payment_method: payMethod,
+          p_payment_method: method,
           // Step 3: where this booking came from. The website timetable is
           // this page; the group-chat link and walk-ins set their own.
           p_source: 'website',
@@ -453,7 +481,7 @@ export default function BookGym() {
           // auto-redirect: the same screen hands over the manage token,
           // which a guest can NEVER recover if we navigate away first.
           const payUrl =
-            payMethod === 'online'
+            method === 'online'
               ? await fetchClassPayLink({
                   bookingId: data.manage_token || null,
                   title: data.class_name || active.title,
@@ -464,7 +492,7 @@ export default function BookGym() {
           setDone({
             title: data.class_name || active.title, live: true,
             places: placesBooked,
-            payMethod: data.payment_method || payMethod,
+            payMethod: data.payment_method || method,
             total: data.total_pennies ?? (priceOf(active) * (bookedFor === 'group' ? places : 1)),
             startsAt: data.starts_at || null,
             seatsLeft: data.seats_left ?? null,
@@ -509,7 +537,7 @@ export default function BookGym() {
     setDone({
       title: active.title, live: false,
       places: bookedFor === 'group' ? places : 1,
-      payMethod,
+      payMethod: method,
       total: priceOf(active) * (bookedFor === 'group' ? places : 1),
     })
     setActive(null)
@@ -778,15 +806,31 @@ export default function BookGym() {
                     />
                     Pay on arrival
                   </label>
-                  <label className={`bk__choice${payMethod === 'online' ? ' bk__choice--on' : ''}`}>
-                    <input
-                      type="radio" name="bk-pay" value="online"
-                      checked={payMethod === 'online'}
-                      onChange={() => setPayMethod('online')}
-                    />
-                    Pay online
-                  </label>
+                  {/* Hidden entirely — not disabled — on an arrival-only
+                      class: a greyed "Pay online" reads as "broken", while
+                      its absence reads as "this class is paid at the door",
+                      which is the truth. payMethod cannot become 'online'
+                      here because startBooking resets it per class and this
+                      is the only control that sets it. */}
+                  {!isArrivalOnly(active) && (
+                    <label className={`bk__choice${payMethod === 'online' ? ' bk__choice--on' : ''}`}>
+                      <input
+                        type="radio" name="bk-pay" value="online"
+                        checked={payMethod === 'online'}
+                        onChange={() => setPayMethod('online')}
+                      />
+                      Pay online
+                    </label>
+                  )}
                 </div>
+
+                {isArrivalOnly(active) && (
+                  <p className="bk__hint">
+                    This class is pay on arrival — bring card or cash on the
+                    day and pay {active.coach ? active.coach : 'the coach'} at
+                    the door.
+                  </p>
+                )}
 
                 <p className="bk__total">
                   <span>{places} × {fmtPrice(priceOf(active))}</span>

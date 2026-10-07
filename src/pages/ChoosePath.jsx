@@ -105,17 +105,10 @@ const PATHS = [
     blurb: 'HIIT, strength and spin at the Hub — live seats, pay online.',
     meta: 'Instant booking',
   },
-  {
-    // The club's OWN storefront at /shop — public, no sign-in, pays through
-    // Square. Was an external link to maderunning.com (Shopify); removed at
-    // the club's instruction: every transaction happens through Square and
-    // nothing on this site links to the Shopify shop.
-    to: '/shop',
-    label: 'Shop',
-    variant: 'solid',
-    blurb: 'The vest means something. Official Made Running apparel.',
-    meta: 'Pay securely with Square',
-  },
+  // The Shop door sat last here. It was an external maderunning.com link,
+  // then the club's own /shop storefront, and is now removed entirely —
+  // the club disabled the shop (see the note in App.jsx). Four doors until
+  // it reopens.
 ]
 
 const LAST_PATH_KEY = 'mr.lastPath'

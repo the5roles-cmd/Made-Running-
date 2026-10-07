@@ -211,14 +211,9 @@ const QUICK_PATHS = [
   // label. See src/lib/registration.js.
   { dest: '/join', label: 'I am a Runner', meta: SIGNIN_META },
   { dest: '/join', key: 'community', label: 'Join the Community', meta: 'Everyone welcome' },
-  // Shop sits third — dead centre of the five — so the club's revenue door
-  // is the one the eye lands on first as it scans the row. It points at the
-  // PUBLIC /shop mount, not /app/shop: the shop is open and buying a tee is
-  // not a membership question, so this card must not route through /login.
-  // `public: true` is what skips the loginHref wrap in the render below —
-  // same mechanism /book uses. The "Shop Now" CTA in section 6b goes to the
-  // same door, so card and CTA can never disagree.
-  { dest: '/shop', public: true, label: 'Shop', meta: 'Kit in the club colours' },
+  // The Shop card sat third here — removed when the club disabled the shop
+  // (see the note in App.jsx). The row is four cards until it reopens; the
+  // section-6b band below keeps the kit visible but links nowhere.
   // The only card that does NOT go through /login, and the only one that is a
   // real <a href> rather than a <Link>.
   //
@@ -982,30 +977,21 @@ export default function Landing() {
         .tp-shop__h2 {
           color: #fff;
         }
-        /* The shop is OPEN now, so this reads as a button, not a status
-           pill: solid white on the dark section — the same treatment the
-           hero gives its primary CTA on film — with the shared 7px radius
-           and 44px minimum target of .tp-btn-primary. */
-        .tp-shop__now {
+        /* The shop is DISABLED, so this is a status pill, not a button:
+           hairline outline, no fill, no hover — nothing that invites a
+           click, because there is nowhere to go. (The solid-white
+           .tp-shop__now button returns with the shop.) */
+        .tp-shop__soon {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          padding: 13px 24px;
-          min-height: 44px;
-          border-radius: 7px;
-          border: 1px solid #ffffff;
-          background: #ffffff;
-          font-size: 0.78rem;
+          padding: 10px 18px;
+          border-radius: 999px;
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          font-size: 0.72rem;
           font-weight: 700;
-          letter-spacing: 0.12em;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
-          color: #1c1c1c;
-          text-decoration: none;
-          transition: filter 200ms;
-        }
-        .tp-shop__now:hover {
-          filter: brightness(0.94);
-          text-decoration: none;
+          color: rgba(255, 255, 255, 0.85);
         }
         @media (max-width: 860px) {
           .tp-shop { grid-template-columns: 1fr; }
@@ -1625,14 +1611,12 @@ export default function Landing() {
             carries the line that started it &mdash; and you will spot it on
             every start line from Manchester to Dubai.
           </p>
-          {/* The swap the old comment here promised, with one change: the
-              shop opened as OUR public /shop route, not the external
-              maderunning.com <a> that predated it — so this is a <Link>,
-              and it lands on the same storefront the quick card above and
-              the member door at /app/shop share. */}
-          <Link to="/shop" className="tp-shop__now">
-            Shop Now <ArrowRight size={14} />
-          </Link>
+          {/* The shop is disabled at the club's instruction, so this is a
+              status chip, not a link — a dead <Link> that lands back on the
+              homepage would read as broken. The band itself stays: the kit
+              is real and the photo is the club's own vest. When the shop
+              reopens, this swaps back to the "Shop Now" <Link>. */}
+          <span className="tp-shop__soon">Coming soon</span>
         </Reveal>
       </section>
 
