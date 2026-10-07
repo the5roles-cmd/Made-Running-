@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import AuthSplash from '../auth/AuthSplash'
-import { supabase, supabaseConfigured } from '../lib/supabase'
+import { supabase, supabaseConfigured, friendlyError } from '../lib/supabase'
 import { safeNext } from '../lib/authNext'
 import { REGISTRATION_OPEN } from '../lib/registration'
 import { tenant } from '../lib/theme'
@@ -193,7 +193,12 @@ export default function Login() {
       // its first paint instead of needing a manual refresh.
       navigate(dest, { replace: true })
     } catch (err) {
-      setErrorMsg(err.message || 'Something went wrong.')
+      // Not `err.message` directly. Everything above this line is a reply FROM
+      // Supabase and is already written for a person; everything that lands
+      // here instead of there failed before Supabase was ever reached, so the
+      // message is the browser's own — "Failed to fetch" — which tells a
+      // member nothing and tells them it in developer vocabulary.
+      setErrorMsg(friendlyError(err))
       setBusy(false)
     }
   }

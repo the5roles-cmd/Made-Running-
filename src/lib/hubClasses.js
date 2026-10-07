@@ -205,24 +205,26 @@ export const HUB_CLASSES = [
 export const HUB_FOOTNOTE =
   'Join the group chats in the community and book your spaces. Everyone welcome.'
 
-// ── Placeholder price ────────────────────────────────────────────────
-// PLACEHOLDER. The club has not given us a price list and this number is
-// invented. It exists because the alternative is worse in a specific way:
-// classes.price_pennies DEFAULTS TO 0 in the schema, and fmtPrice() renders
-// 0 as "Free". Showing no price until the SQL runs means the booking page
-// asks for money it never names; running the SQL as-is means a paid gym
-// advertises twelve free classes. A placeholder that errs high gets
-// corrected at the door. "Free" does not — it gets honoured.
+// ── Class price ──────────────────────────────────────────────────────
+// £10.00 flat, given by the club. This was previously an invented £6.00
+// placeholder; it is now a real figure, so the old "errs high, gets
+// corrected at the door" hedge no longer applies.
 //
-// ONE shared number rather than twelve per-class ones, on purpose: twelve
-// invented figures look researched and somebody downstream would trust
-// them. A flat rate is visibly a single knob waiting to be turned.
+// It still lives here rather than in the schema's defaults because
+// classes.price_pennies DEFAULTS TO 0 and fmtPrice() renders 0 as "Free" —
+// so until the SQL is run with real values, anything that falls through to
+// the database would advertise twelve free classes. This constant is what
+// stands between that default and the booking page.
+//
+// ONE shared number rather than twelve per-class ones, because the club
+// charges one rate. If that ever stops being true the per-class figures
+// belong in the database, not here.
 //
 // The DATABASE WINS wherever it has an opinion. Every read site uses
 // `db?.price_pennies ?? HUB_PLACEHOLDER_PRICE_PENNIES`, so the moment the
-// club sets real prices in the Classes editor this constant stops being
+// club sets prices in the Classes editor this constant stops being
 // reached, and it is deleted with the rest of this file at cutover.
-export const HUB_PLACEHOLDER_PRICE_PENNIES = 600
+export const HUB_PLACEHOLDER_PRICE_PENNIES = 1000
 
 // ── Class card artwork, keyed by DISCIPLINE ──────────────────────────
 // The photo band across the top of each card on /book.

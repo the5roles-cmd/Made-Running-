@@ -6,6 +6,7 @@
 // ============================================================
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { supabase, supabaseConfigured } from '../lib/supabase'
+import { isDemoAuth, demoSession, demoOrgs, demoRole } from '../lib/demoAuth'
 
 const AuthCtx = createContext(null)
 export const useAuth = () => useContext(AuthCtx)
@@ -115,6 +116,25 @@ export function AuthProvider({ children }) {
   )
 
   useEffect(() => {
+    // ── Demo mode: start already signed in ───────────────────────────────
+    // Before the supabaseConfigured check, not after. The env file still
+    // carries a VITE_SUPABASE_URL, so supabaseConfigured is true even though
+    // that project no longer resolves — ordering this second would hand
+    // control to the real client and every call would hang until DNS failed.
+    //
+    // No subscription and no cleanup: there is no auth service to emit
+    // events, so the session set here is the only one there will ever be.
+    if (isDemoAuth) {
+      userIdRef.current = demoSession.user.id
+      setSession(demoSession)
+      setOrgs(demoOrgs)
+      setOrgId(demoOrgs[0].id)
+      setRole(demoRole)
+      localStorage.setItem(ORG_KEY, demoOrgs[0].id)
+      setLoading(false)
+      return
+    }
+
     if (!supabaseConfigured) {
       setLoading(false)
       return
@@ -173,14 +193,40 @@ export function AuthProvider({ children }) {
     loading,
     // Reads the id from the ref, not from `session`. Callers get the resolved
     // list back, so they never have to guess from a captured `orgs`.
-    refreshOrgs: () => loadMemberships(userIdRef.current),
+    // In demo mode the memberships table is unreachable, so re-querying it
+    // would replace a working org list with []. Hand back the same fixed list
+    // the bootstrap installed — Login.jsx awaits this and branches on its
+    // length, and a zero-length answer would send it into create_org.
+    refreshOrgs: () => (isDemoAuth ? Promise.resolve(demoOrgs) : loadMemberships(userIdRef.current)),
     switchOrg,
-    signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
+    // The demo variants return Supabase's exact { data, error } envelope so
+    // Login.jsx needs no branch of its own: it reads `error` first, then
+    // `data.user`, and both are present here. Any password is accepted —
+    // there is nothing to check one against, and a demo that can be locked
+    // out by a typo mid-presentation is worse than no demo.
+    signIn: (email, password) =>
+      isDemoAuth
+        ? Promise.resolve({ data: { user: demoSession.user, session: demoSession }, error: null })
+        : supabase.auth.signInWithPassword({ email, password }),
     // meta (optional) → Supabase user_metadata; the mandatory-profile signup
     // form on Login.jsx passes full_name/phone/location/business_name/website.
     signUp: (email, password, meta) =>
-      supabase.auth.signUp({ email, password, options: meta ? { data: meta } : undefined }),
-    signOut: () => supabase.auth.signOut(),
+      isDemoAuth
+        ? Promise.resolve({ data: { user: demoSession.user, session: demoSession }, error: null })
+        : supabase.auth.signUp({ email, password, options: meta ? { data: meta } : undefined }),
+    // Clears the session so the sign-out button visibly works, but does not
+    // call Supabase. Signing back in is immediate — signIn above always
+    // succeeds — so this is a round trip, not a trap.
+    signOut: () => {
+      if (isDemoAuth) {
+        setSession(null)
+        setOrgs([])
+        setOrgId(null)
+        setRole(null)
+        return Promise.resolve({ error: null })
+      }
+      return supabase.auth.signOut()
+    },
 
     // ── Password recovery, two halves ─────────────────────────────
     // 1. requestPasswordReset emails a one-time link. Supabase does NOT

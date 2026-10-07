@@ -626,98 +626,23 @@ body {
       </div>
     </fieldset>
 
-    <!-- ─── 3. Experience ──────────────────────────────────────────── -->
-    <fieldset class="section reveal">
-      <legend class="sr">Experience</legend>
-      <div class="section__head" aria-hidden="true">
-        <span class="section__num">03</span>
-        <h2 class="section__title">Experience</h2>
-      </div>
-      <p class="section__hint">We care more about how you coach than how long you've done it.</p>
+    <!-- The "Experience" (03) and "Qualifications" (04) sections were removed
+         at the club's request — years coached, prior experience, philosophy,
+         level worked with, certifications, certificate uploads and
+         specialised training are no longer asked on the first-contact form.
 
-      <div class="field">
-        <label class="label" for="years">Years of experience<span class="req">*</span></label>
-        <input class="input" id="years" name="years" type="number" min="0" max="60" step="1" inputmode="numeric" style="max-width:180px" required />
-        <span class="err" id="err-years" aria-live="polite"></span>
-      </div>
+         The payload objects `experience` and `qualifications` went with them,
+         so anything consuming the JSON must not assume either key exists.
+         The file-upload machinery (accept/validate/render/base64-pack) was
+         deleted too — certificates were the only file input on the form. If
+         any upload returns, recover it from git history rather than
+         reinventing the 10 MB / 5-file / type-sniffing rules. -->
 
-      <div class="field">
-        <label class="label" for="priorExperience">Prior coaching or teaching experience<span class="req">*</span></label>
-        <textarea class="textarea" id="priorExperience" name="priorExperience" placeholder="Where you've coached, who with, what kind of sessions." required></textarea>
-        <span class="err" id="err-priorExperience" aria-live="polite"></span>
-      </div>
-
-      <div class="field">
-        <label class="label" for="philosophy">Your coaching style &amp; philosophy<span class="req">*</span></label>
-        <textarea class="textarea" id="philosophy" name="philosophy" placeholder="How do you run a session? How do you handle the person finishing last?" required></textarea>
-        <span class="err" id="err-philosophy" aria-live="polite"></span>
-      </div>
-
-      <div class="field">
-        <fieldset style="border:0;padding:0;margin:0;min-width:0">
-          <legend class="label" style="padding:0">Who have you mostly worked with?<span class="opt">optional</span></legend>
-          <div class="choices choices--2">
-            <label class="choice"><input type="radio" name="level" value="Beginners" /><span>Beginners</span></label>
-            <label class="choice"><input type="radio" name="level" value="Competitive athletes" /><span>Competitive athletes</span></label>
-            <label class="choice"><input type="radio" name="level" value="Both" /><span>Both</span></label>
-          </div>
-        </fieldset>
-      </div>
-    </fieldset>
-
-    <!-- ─── 4. Qualifications ──────────────────────────────────────── -->
-    <fieldset class="section reveal">
-      <legend class="sr">Qualifications and certifications</legend>
-      <div class="section__head" aria-hidden="true">
-        <span class="section__num">04</span>
-        <h2 class="section__title">Qualifications</h2>
-      </div>
-      <p class="section__hint">Anything you can't upload now, you can send later — tell us and we'll chase it.</p>
-
-      <div class="field">
-        <label class="label" for="certifications">Certifications you hold<span class="req">*</span></label>
-        <textarea class="textarea" id="certifications" name="certifications" placeholder="e.g. UKA Coach in Running Fitness (CiRF), Level 3 PT, RYT-200 — with awarding body and year." required></textarea>
-        <span class="err" id="err-certifications" aria-live="polite"></span>
-      </div>
-
-      <div class="field">
-        <span class="label" id="certFilesLabel">Upload certificate(s)<span class="opt">optional — PDF, JPG or PNG</span></span>
-        <div class="drop" data-drop="certFiles">
-          <button type="button" class="drop__btn" data-open="certFiles">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Choose files
-          </button>
-          <p class="drop__hint">or drag them here — up to 5 files, 10&nbsp;MB each</p>
-          <input class="sr" type="file" id="certFiles" name="certFiles" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple aria-labelledby="certFilesLabel" />
-        </div>
-        <ul class="filelist" id="list-certFiles"></ul>
-        <span class="err" id="err-certFiles" aria-live="polite"></span>
-      </div>
-
-      <!-- First aid / CPR and liability insurance used to sit here as two
-           required Yes/No pairs, with a conditional insurance-certificate
-           upload underneath the second one. All three were removed at the
-           club's request.
-
-           If they ever come back, note that they are compliance questions, not
-           screening questions: the honest place for them is AFTER a coach is
-           offered a trial, not on the first-contact form. Asking an outsider
-           to declare they have no insurance is a good way to make them close
-           the tab. The payload keys `firstAidCertified` and
-           `liabilityInsurance` are gone too, so anything consuming the JSON
-           must not assume they exist. -->
-
-      <div class="field">
-        <label class="label" for="specialised">Specialised training<span class="opt">optional</span></label>
-        <textarea class="textarea" id="specialised" name="specialised" placeholder="e.g. pre/post-natal, strength for runners, injury rehab, coaching neurodivergent athletes."></textarea>
-      </div>
-    </fieldset>
-
-    <!-- ─── 5. Additional info ─────────────────────────────────────── -->
+    <!-- ─── 3. Additional info ─────────────────────────────────────── -->
     <fieldset class="section reveal">
       <legend class="sr">Additional information</legend>
       <div class="section__head" aria-hidden="true">
-        <span class="section__num">05</span>
+        <span class="section__num">03</span>
         <h2 class="section__title">About you</h2>
       </div>
       <p class="section__hint">The part we actually read twice.</p>
@@ -743,11 +668,11 @@ body {
       </div>
     </fieldset>
 
-    <!-- ─── 6. Consent ─────────────────────────────────────────────── -->
+    <!-- ─── 4. Consent ─────────────────────────────────────────────── -->
     <fieldset class="section reveal">
       <legend class="sr">Consent</legend>
       <div class="section__head" aria-hidden="true">
-        <span class="section__num">06</span>
+        <span class="section__num">04</span>
         <h2 class="section__title">Consent</h2>
       </div>
       <p class="section__hint">Both boxes are required before we can accept an application.</p>
@@ -801,20 +726,11 @@ body {
   // Expects POST application/json, responds 2xx on success.
   var ENDPOINT = '/api/coach-applications';
 
-  var MAX_FILE_BYTES = 10 * 1024 * 1024;  // 10 MB per file
-  var MAX_FILES = 5;
-  var ACCEPTED = ['application/pdf', 'image/jpeg', 'image/png'];
-
   var form = document.getElementById('form');
   var summary = document.getElementById('summary');
   var summaryList = document.getElementById('summary-list');
   var doneEl = document.getElementById('done');
   var submitBtn = document.getElementById('submitBtn');
-
-  // Files live here, not in the <input>. A file input's FileList is
-  // read-only, so "remove one of the four I picked" is impossible if the
-  // input is the source of truth — you would have to clear all four.
-  var files = { certFiles: [] };
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -830,82 +746,10 @@ body {
     else clearError('disciplineOther');
   });
 
-  // ═══════════════════════════════════════════════════════════════════
-  // File handling
-  // ═══════════════════════════════════════════════════════════════════
-
-  function humanSize(b) {
-    if (b < 1024) return b + ' B';
-    if (b < 1024 * 1024) return Math.round(b / 1024) + ' KB';
-    return (b / (1024 * 1024)).toFixed(1) + ' MB';
-  }
-
-  function acceptFiles(key, incoming) {
-    var errs = [];
-    var slots = MAX_FILES - files[key].length;
-    Array.prototype.forEach.call(incoming, function (f) {
-      if (slots <= 0) { errs.push(f.name + ' was not added — ' + MAX_FILES + ' files maximum.'); return; }
-      // accept="" is only a picker filter. Drag-drop, paste and "All Files"
-      // all walk straight past it, so the real check happens here.
-      var okType = ACCEPTED.indexOf(f.type) !== -1 || /\.(pdf|jpe?g|png)$/i.test(f.name);
-      if (!okType) { errs.push(f.name + ' is not a PDF, JPG or PNG.'); return; }
-      if (f.size > MAX_FILE_BYTES) { errs.push(f.name + ' is ' + humanSize(f.size) + ' — the limit is 10 MB.'); return; }
-      files[key].push(f);
-      slots--;
-    });
-    renderFiles(key);
-    setError(key, errs.join(' '));
-  }
-
-  function renderFiles(key) {
-    var ul = $('list-' + key);
-    ul.innerHTML = '';
-    files[key].forEach(function (f, idx) {
-      var li = document.createElement('li');
-      li.className = 'fileitem';
-      var name = document.createElement('span');
-      name.className = 'fileitem__name';
-      name.textContent = f.name;
-      var size = document.createElement('span');
-      size.className = 'fileitem__size';
-      size.textContent = humanSize(f.size);
-      var x = document.createElement('button');
-      x.type = 'button';
-      x.className = 'fileitem__x';
-      x.setAttribute('aria-label', 'Remove ' + f.name);
-      x.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-      x.addEventListener('click', function () {
-        files[key].splice(idx, 1);
-        renderFiles(key);
-        clearError(key);
-      });
-      li.appendChild(name); li.appendChild(size); li.appendChild(x);
-      ul.appendChild(li);
-    });
-  }
-
-  // Still a list of one. Keeping the loop rather than inlining it: the shape
-  // of "every file input on this form" is the thing being expressed, and a
-  // second upload is one string away from working again.
-  ['certFiles'].forEach(function (key) {
-    var input = $(key);
-    input.addEventListener('change', function () {
-      acceptFiles(key, input.files);
-      // Reset, or picking the SAME file twice fires no change event.
-      input.value = '';
-    });
-
-    var drop = document.querySelector('[data-drop="' + key + '"]');
-    ['dragenter', 'dragover'].forEach(function (ev) {
-      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('is-over'); });
-    });
-    ['dragleave', 'drop'].forEach(function (ev) {
-      drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('is-over'); });
-    });
-    drop.addEventListener('drop', function (e) {
-      if (e.dataTransfer && e.dataTransfer.files) acceptFiles(key, e.dataTransfer.files);
-    });
-  });
+  // The file-handling block (humanSize/acceptFiles/renderFiles, the
+  // drag-drop wiring and the 10 MB / 5-file / PDF-JPG-PNG rules) was removed
+  // with the Qualifications section — certificates were the only file input
+  // on this form. It lives in git history, not here.
 
   Array.prototype.forEach.call(document.querySelectorAll('[data-open]'), function (btn) {
     btn.addEventListener('click', function () { $(btn.getAttribute('data-open')).click(); });
@@ -990,16 +834,6 @@ body {
       problems.push({ id: 'format', label: 'Preferred format' });
     } else clearError('format');
 
-    var yrs = $('years').value.trim();
-    if (yrs === '' || isNaN(Number(yrs)) || Number(yrs) < 0) {
-      setError('years', 'Enter a number of years (0 is fine).');
-      problems.push({ id: 'years', label: 'Years of experience' });
-    } else clearError('years');
-
-    req('priorExperience', 'Prior experience');
-    req('philosophy', 'Coaching philosophy');
-    req('certifications', 'Certifications');
-
     req('why', 'Why Made Running');
 
     if (!$('consentAccurate').checked) {
@@ -1038,32 +872,7 @@ body {
   // Payload
   // ═══════════════════════════════════════════════════════════════════
 
-  function toBase64(file) {
-    return new Promise(function (resolve, reject) {
-      var r = new FileReader();
-      // Strip the "data:application/pdf;base64," prefix — the mime type is
-      // already carried as its own field, and most server-side decoders
-      // choke on the data-URL header.
-      r.onload = function () { resolve(String(r.result).split(',')[1] || ''); };
-      r.onerror = function () { reject(new Error('Could not read ' + file.name)); };
-      r.readAsDataURL(file);
-    });
-  }
-
   async function buildPayload() {
-    async function pack(list) {
-      var packed = [];
-      for (var i = 0; i < list.length; i++) {
-        packed.push({
-          filename: list[i].name,
-          mimeType: list[i].type || 'application/octet-stream',
-          sizeBytes: list[i].size,
-          data: await toBase64(list[i]),
-        });
-      }
-      return packed;
-    }
-
     return {
       // Versioned from day one: this payload will change, and the CRM will
       // need to tell an old submission from a new one.
@@ -1085,17 +894,9 @@ body {
         availableDays: checkedValues('days'),
         availabilityNotes: $('availability').value.trim() || null,
       },
-      experience: {
-        years: Number($('years').value),
-        priorExperience: $('priorExperience').value.trim(),
-        philosophy: $('philosophy').value.trim(),
-        levelWorkedWith: radioValue('level') || null,
-      },
-      qualifications: {
-        certifications: $('certifications').value.trim(),
-        specialisedTraining: $('specialised').value.trim() || null,
-        certificateFiles: await pack(files.certFiles),
-      },
+      // `experience` and `qualifications` objects removed with their form
+      // sections (schemaVersion stays 1: consumers were already told not to
+      // assume removed keys exist — see the References note below).
       additional: {
         whyMadeRunning: $('why').value.trim(),
         anythingElse: $('anythingElse').value.trim() || null,

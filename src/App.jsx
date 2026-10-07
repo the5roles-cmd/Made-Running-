@@ -62,6 +62,13 @@ const ClassPage = lazy(() => import('./pages/ClassPage'))
 // boundary for the same third one.
 const Coaches = lazy(() => import('./pages/Coaches'))
 
+// The PUBLIC shop door. Lazy for the ClassPage reasons (not the pitch page;
+// a visitor to / must not pay for the storefront chunk) and it needs its own
+// Suspense boundary out here for the same third one. Note it wraps the SAME
+// lazy Shop above — Vite gives Shop one chunk however many routes import it,
+// so the member door and this one download identical bytes.
+const ShopPublic = lazy(() => import('./pages/ShopPublic'))
+
 // Shared fallback for the two public lazy routes. Inline styles, NOT a
 // className — each page ships its own CSS in a <style> tag inside its own
 // chunk, so while that chunk is in flight none of its rules exist yet and a
@@ -138,6 +145,19 @@ export default function App() {
         element={
           <Suspense fallback={<PublicBoot />}>
             <Coaches />
+          </Suspense>
+        }
+      />
+      {/* ── The public shop ─────────────────────────────────────────────
+          No auth: buying a tee is not a membership question, and the landing
+          page's "Shop Now" CTA points here. The member-facing mount at
+          /app/shop below stays — same component, two doors; see
+          ShopPublic.jsx for why that is a wrapper and not a copy. */}
+      <Route
+        path="/shop"
+        element={
+          <Suspense fallback={<PublicBoot />}>
+            <ShopPublic />
           </Suspense>
         }
       />

@@ -47,36 +47,36 @@ begin
   )
   values
     -- Monday
-    (v_org, 'hot-kettlebells-mon-0930', 'Hot Kettlebells', 'Jade',    1, '09:30', true,  false, null, null, 40, 0),
-    (v_org, 'hot-kettlebells-mon-1930', 'Hot Kettlebells', 'Micah',   1, '19:30', false, false, null, null, 40, 0),
+    (v_org, 'hot-kettlebells-mon-0930', 'Hot Kettlebells', 'Jade',    1, '09:30', true,  false, null, null, 40, 1000),
+    (v_org, 'hot-kettlebells-mon-1930', 'Hot Kettlebells', 'Micah',   1, '19:30', false, false, null, null, 40, 1000),
 
     -- Tuesday. The 5am HIIT is paused, not deleted: it stays visible on the
     -- timetable with its reason, because hiding it reads as "cancelled" to
     -- members who know it exists.
     (v_org, 'hiit-tue-0500',            'HIIT',            'Hermen',  2, '05:00', false, true,
-      'Starting back next week', null, 40, 0),
-    (v_org, 'catch-a-circuit-tue-1830', 'CaTcH a Circuit', 'Jade',    2, '18:30', false, false, null, null, 40, 0),
+      'Starting back next week', null, 40, 1000),
+    (v_org, 'catch-a-circuit-tue-1830', 'CaTcH a Circuit', 'Jade',    2, '18:30', false, false, null, null, 40, 1000),
 
     -- Wednesday
     (v_org, 'the-valley-wed-1845',      'The Valley',      'K3 & Marvin', 3, '18:45', false, false, null,
-      'Hot kettlebells', 40, 0),
+      'Hot kettlebells', 40, 1000),
 
     -- Thursday. The PDF names no coach for Dog Business HIIT — left NULL
     -- rather than guessed. The UI omits the "with …" line when it is absent.
-    (v_org, 'dog-business-hiit-thu-1830','Dog Business HIIT', null,   4, '18:30', false, false, null, null, 40, 0),
-    (v_org, 'yoga-thu-1900',            'Yoga',            'Brittany',4, '19:00', false, false, null, null, 40, 0),
+    (v_org, 'dog-business-hiit-thu-1830','Dog Business HIIT', null,   4, '18:30', false, false, null, null, 40, 1000),
+    (v_org, 'yoga-thu-1900',            'Yoga',            'Brittany',4, '19:00', false, false, null, null, 40, 1000),
 
     -- Friday
-    (v_org, 'kettlebells-fri-0930',     'Kettlebells',     'Daria',   5, '09:30', true,  false, null, null, 40, 0),
+    (v_org, 'kettlebells-fri-0930',     'Kettlebells',     'Daria',   5, '09:30', true,  false, null, null, 40, 1000),
     (v_org, 'the-valley-fri-1045',      'The Valley',      'K3 & Marvin', 5, '10:45', false, false, null,
-      'Hot kettlebells', 40, 0),
+      'Hot kettlebells', 40, 1000),
 
     -- Saturday
-    (v_org, 'hustle-hard-sat-0800',     'Hustle Hard',     'Malachi', 6, '08:00', false, false, null, null, 40, 0),
-    (v_org, 'hot-kettlebells-sat-1930', 'Hot Kettlebells', 'Micah',   6, '19:30', false, false, null, null, 40, 0),
+    (v_org, 'hustle-hard-sat-0800',     'Hustle Hard',     'Malachi', 6, '08:00', false, false, null, null, 40, 1000),
+    (v_org, 'hot-kettlebells-sat-1930', 'Hot Kettlebells', 'Micah',   6, '19:30', false, false, null, null, 40, 1000),
 
     -- Sunday
-    (v_org, 'propain-hiit-sun-1200',    'The Propain HIIT Class', 'Nathaniel', 0, '12:00', false, false, null, null, 40, 0)
+    (v_org, 'propain-hiit-sun-1200',    'The Propain HIIT Class', 'Nathaniel', 0, '12:00', false, false, null, null, 40, 1000)
 
   on conflict (org_id, slug) do update set
     name            = excluded.name,
@@ -88,8 +88,15 @@ begin
     pause_note      = excluded.pause_note,
     description     = excluded.description;
     -- capacity and price_pennies are deliberately NOT overwritten on
-    -- conflict. Once the club has set a real price or a smaller room
-    -- capacity, re-running this seed must not silently reset it to 40/free.
+    -- conflict. Once the club has set a different price or a smaller room
+    -- capacity in the Classes editor, re-running this seed must not silently
+    -- reset it.
+    --
+    -- Note this cuts both ways: the 1000 (£10.00) above only applies on FIRST
+    -- insert, so a project that was seeded while the price was still 0 keeps
+    -- the 0 however many times this file is re-run. Fix those in the editor,
+    -- or with an explicit one-off:
+    --   update classes set price_pennies = 1000 where price_pennies = 0;
 
   -- ── Generate the dated, bookable sessions (Step 4) ──────────
   select generate_class_sessions(v_org) into v_made;

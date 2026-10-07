@@ -174,32 +174,118 @@ app.post('/api/match', async (req, res) => {
 
 // ── POST /api/checkout ──────────────────────────────────────
 // Local-dev mirror of api/checkout.js (Vercel serverless). Same contract,
-// two runtimes — keep them in sync. Creates a Stripe Checkout session, or
-// returns { demo: true } when no STRIPE_SECRET_KEY is set so the booking
-// flow still completes on screen without a merchant account.
+// two runtimes — keep them in sync. Square first, Stripe as legacy
+// fallback, { demo: true } when neither is configured so the booking flow
+// still completes on screen without a merchant account.
+//
+// The client NEVER sends an amount — see the long comment in
+// api/checkout.js. Body kinds:
+//   { kind: 'class', bookingId, title, places, email, successUrl }
+//   { kind: 'cart',  items: [{ productId, colourway, size, qty }], email, successUrl }
+//
+// This file is CommonJS but _square.js and products.js are ES modules;
+// require() cannot load ESM, dynamic import() can. Loaded lazily on the
+// first checkout call and cached — zero cost for the AI-only workflows
+// this server mostly exists for.
+const { pathToFileURL } = require('url')
+const { randomUUID } = require('crypto')
+
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 const realStripe = (k) =>
   typeof k === 'string' && k.startsWith('sk_') && !k.includes('...') && !k.toLowerCase().includes('your')
 
+const CLASS_PRICE_PENNIES = 1000 // every class is £10, set by the club
+
+let checkoutDepsPromise = null
+function checkoutDeps() {
+  if (!checkoutDepsPromise) {
+    checkoutDepsPromise = Promise.all([
+      import(pathToFileURL(path.join(__dirname, '..', 'api', '_square.js')).href),
+      import(pathToFileURL(path.join(__dirname, '..', 'src', 'lib', 'products.js')).href),
+    ]).then(([square, products]) => ({ ...square, PRODUCTS: products.PRODUCTS }))
+  }
+  return checkoutDepsPromise
+}
+
+const clampInt = (n, lo, hi, fallback) => {
+  const v = Math.trunc(Number(n))
+  if (!Number.isFinite(v)) return fallback
+  return Math.min(hi, Math.max(lo, v))
+}
+
+// Same normalisation as api/checkout.js buildOrder() — keep in sync.
+function buildOrder(payload, PRODUCTS) {
+  if (payload.kind === 'cart') {
+    const items = Array.isArray(payload.items) ? payload.items : []
+    const lineItems = []
+    for (const it of items) {
+      const product = PRODUCTS.find((p) => p.id === (it && it.productId))
+      if (!product) continue
+      const qty = clampInt(it.qty, 1, 20, 1)
+      const variant = [it.colourway, it.size].filter(Boolean).join(', ')
+      lineItems.push({
+        name: variant ? `${product.name} (${variant})` : product.name,
+        quantity: qty,
+        amountPennies: Math.round(product.price * 100),
+      })
+    }
+    if (lineItems.length === 0) return { error: 'No recognisable items in the cart.' }
+    return { lineItems, referenceId: undefined, idempotencyKey: randomUUID() }
+  }
+  const places = clampInt(payload.places, 1, 10, 1)
+  return {
+    lineItems: [
+      { name: payload.title || 'Gym class booking', quantity: places, amountPennies: CLASS_PRICE_PENNIES },
+    ],
+    referenceId: payload.bookingId || undefined,
+    idempotencyKey: payload.bookingId ? `mr-booking-${payload.bookingId}` : randomUUID(),
+  }
+}
+
 app.post('/api/checkout', async (req, res) => {
-  if (!realStripe(STRIPE_SECRET_KEY)) {
+  const payload = req.body || {}
+  const squareToken = process.env.SQUARE_ACCESS_TOKEN
+  const { realSquareToken, resolveLocationId, createPaymentLink, PRODUCTS } = await checkoutDeps()
+
+  if (!realSquareToken(squareToken) && !realStripe(STRIPE_SECRET_KEY)) {
     return res.json({ demo: true })
   }
-  const { bookingId, amountPennies, title, email, successUrl, cancelUrl } = req.body || {}
-  if (!amountPennies || amountPennies < 1) {
-    return res.status(400).json({ error: 'A positive amount is required to start checkout.' })
-  }
-  const params = new URLSearchParams()
-  params.set('mode', 'payment')
-  params.set('success_url', successUrl || 'http://localhost:4970/book?paid=1')
-  params.set('cancel_url', cancelUrl || 'http://localhost:4970/book?cancelled=1')
-  if (email) params.set('customer_email', email)
-  if (bookingId) params.set('client_reference_id', bookingId)
-  params.set('line_items[0][quantity]', '1')
-  params.set('line_items[0][price_data][currency]', 'gbp')
-  params.set('line_items[0][price_data][unit_amount]', String(Math.round(amountPennies)))
-  params.set('line_items[0][price_data][product_data][name]', title || 'Gym class booking')
+
+  const order = buildOrder(payload, PRODUCTS)
+  if (order.error) return res.status(400).json({ error: order.error })
+
+  const email = typeof payload.email === 'string' ? payload.email : undefined
+  const successUrl = typeof payload.successUrl === 'string' ? payload.successUrl : undefined
+
   try {
+    if (realSquareToken(squareToken)) {
+      const locationId = await resolveLocationId(squareToken)
+      const url = await createPaymentLink({
+        token: squareToken,
+        locationId,
+        lineItems: order.lineItems,
+        email,
+        redirectUrl: successUrl,
+        referenceId: order.referenceId,
+        idempotencyKey: order.idempotencyKey,
+      })
+      if (!url) return res.status(502).json({ error: 'Square returned no payment link.' })
+      return res.json({ url })
+    }
+
+    // Stripe legacy fallback — fed from the server-priced line items.
+    const params = new URLSearchParams()
+    params.set('mode', 'payment')
+    params.set('success_url', successUrl || 'http://localhost:4970/book?paid=1')
+    params.set('cancel_url', payload.cancelUrl || 'http://localhost:4970/book?cancelled=1')
+    if (email) params.set('customer_email', email)
+    if (order.referenceId) params.set('client_reference_id', order.referenceId)
+    order.lineItems.forEach((li, i) => {
+      params.set(`line_items[${i}][quantity]`, String(li.quantity))
+      params.set(`line_items[${i}][price_data][currency]`, 'gbp')
+      params.set(`line_items[${i}][price_data][unit_amount]`, String(li.amountPennies))
+      params.set(`line_items[${i}][price_data][product_data][name]`, li.name)
+    })
     const r = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -210,7 +296,8 @@ app.post('/api/checkout', async (req, res) => {
     res.json({ url: data.url })
   } catch (err) {
     console.error('[/api/checkout]', err.message)
-    res.status(500).json({ error: err.message || 'Checkout request failed.' })
+    const status = err.status === 401 || err.status === 403 ? 502 : 500
+    res.status(status).json({ error: 'Could not start checkout. Please try again.' })
   }
 })
 

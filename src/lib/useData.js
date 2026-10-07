@@ -5,8 +5,26 @@
 // consistently everywhere.
 // ============================================================
 import { useCallback, useEffect, useState } from 'react'
-import { supabase, supabaseConfigured, TABLE_MISSING } from './supabase'
+import { supabase, supabaseConfigured, TABLE_MISSING, isNetworkError } from './supabase'
+import { isDemoAuth } from './demoAuth'
 import { useAuth } from '../auth/AuthProvider'
+
+// ── What counts as worth telling the user about ─────────────────────────
+// A read that fails because the database is unreachable is not news on a
+// screen whose whole build is already flagged "no live database" — it is the
+// expected condition, repeated once per hook, as a red box on every page.
+//
+// Narrow on purpose. Only transport failures are swallowed, and only while
+// demo mode is on: a real Postgres error still surfaces, because that one
+// means a query is wrong and is exactly what a demo build should still be
+// able to show you. Supabase reports transport failures through `message`
+// with no `code`, so the TypeError test in isNetworkError cannot be reused
+// directly here — match the text, but only when there is no code to trust.
+const NETWORK_TEXT = /failed to fetch|load failed|networkerror|fetch failed/i
+function silenced(err) {
+  if (!isDemoAuth || !err) return false
+  return isNetworkError(err) || (!err.code && NETWORK_TEXT.test(err.message || ''))
+}
 
 // Generic list read: useList('accounts', { order: 'name' })
 export function useList(table, { order = 'created_at', ascending = false, select = '*' } = {}) {
@@ -29,7 +47,7 @@ export function useList(table, { order = 'created_at', ascending = false, select
       .order(order, { ascending })
     if (err) {
       if (err.code === TABLE_MISSING) setMissing(true)
-      else setError(err.message)
+      else if (!silenced(err)) setError(err.message)
     } else {
       setRows(data || [])
       setError(null)

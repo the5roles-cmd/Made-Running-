@@ -1,13 +1,16 @@
 // ── MADE RUNNING SHOP ────────────────────────────────────────────────────────
-// Demo storefront showing the Made Running product range. Products can be
-// added to a basket and a checkout handoff is presented to the real Shopify
-// storefront. No card-payment form is built here — see the SWAP POINT below.
+// The Made Running storefront. Mounted at TWO routes: /shop (public — buying
+// a tee is not a membership question) and /app/shop (members, inside the
+// shell). Checkout POSTs the cart to /api/checkout, which prices every line
+// server-side and returns a Square-hosted payment page; no card form is
+// built here. With no provider configured the endpoint answers
+// { demo: true } and the old external handoff keeps the flow demonstrable.
 //
 // CSS-only product imagery: each product "shot" is a layered gradient + bold
 // typography composition. No photographs are sourced or hotlinked — house rule
 // consistent with the landing page.
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { ShoppingCart, ShoppingBag, Plus, Minus, X, Shirt } from 'lucide-react'
 import { PageHead } from '../components/ui'
 import {
@@ -17,6 +20,7 @@ import {
   addToCart,
   setCartQty,
   removeFromCart,
+  clearCart,
   cartTotal,
   cartCount,
   isVariantSoldOut,
@@ -421,7 +425,7 @@ function ProductCard({ product, onAddToCart }) {
 
 // ── Basket drawer ─────────────────────────────────────────────────────────────
 
-function BasketDrawer({ items, onClose, onQty, onRemove, onCheckout }) {
+function BasketDrawer({ items, onClose, onQty, onRemove, onCheckout, checkoutBusy, checkoutError }) {
   const total = cartTotal(items)
   const count = cartCount(items)
 
@@ -591,21 +595,41 @@ function BasketDrawer({ items, onClose, onQty, onRemove, onCheckout }) {
               </span>
             </div>
 
-            {/* >>> SWAP POINT: replace window.open with Shopify Storefront API
-                cart creation. POST the line items to /api/shopify/checkout (your
-                server-side proxy), receive a checkoutUrl, and open it. The Admin
-                token must NEVER reach the browser — keep it server-side only.
-                See also src/lib/shopify.js for the established swap-point style. */}
+            {/* Checkout goes through POST /api/checkout (kind: 'cart'), which
+                prices every item server-side from the same catalogue this page
+                renders, then redirects to a Square-hosted payment page. When no
+                payment provider is configured the endpoint answers
+                { demo: true } and we fall back to opening maderunning.com. */}
             <button
               className="btn btn--primary"
               onClick={onCheckout}
+              disabled={checkoutBusy}
               style={{ width: '100%', justifyContent: 'center', minHeight: 52, fontSize: 'var(--fs-md)', fontWeight: 700 }}
             >
               <ShoppingBag size={18} />
-              Continue to Made Running Store
+              {checkoutBusy ? 'Starting secure checkout\u2026' : 'Checkout'}
             </button>
 
-            {/* Honest demo disclosure — tasteful, small, not a giant banner */}
+            {/* A failed START is not a failed payment — the basket is intact
+                and the honest move is to say so and invite a retry, not to
+                bounce the customer to a different website. Only { demo: true }
+                triggers the external handoff; errors land here. */}
+            {checkoutError && (
+              <p
+                role="alert"
+                style={{
+                  fontSize: 'var(--fs-xs)',
+                  textAlign: 'center',
+                  lineHeight: 1.5,
+                  margin: 0,
+                  color: 'var(--danger)',
+                }}
+              >
+                {checkoutError}
+              </p>
+            )}
+
+            {/* Small honest disclosure — payment happens on Square's page, not here */}
             <p
               className="muted"
               style={{
@@ -617,8 +641,8 @@ function BasketDrawer({ items, onClose, onQty, onRemove, onCheckout }) {
                 maxWidth: '100%',
               }}
             >
-              Demo storefront{' \u2014 '}payment handled on{' '}
-              <span style={{ fontWeight: 600, color: 'var(--ink)' }}>maderunning.com</span>
+              Secure payment{' \u2014 '}handled by{' '}
+              <span style={{ fontWeight: 600, color: 'var(--ink)' }}>Square</span>
             </p>
           </div>
         )}
@@ -627,8 +651,33 @@ function BasketDrawer({ items, onClose, onQty, onRemove, onCheckout }) {
   )
 }
 
-// ── Checkout handoff helper ───────────────────────────────────────────────────
-// >>> SWAP POINT: see BasketDrawer above.
+// ── Checkout ──────────────────────────────────────────────────────────────────
+// POST the cart's IDENTITIES (productId / colourway / size / qty) to the
+// checkout endpoint — never prices. The server prices each line from the
+// same catalogue file this page imports, so a tampered request can't buy a
+// £119.99 trainer for a penny. Response contract:
+//   { url }        → Square-hosted payment page; redirect this tab there.
+//   { demo: true } → no provider configured; fall back to the old handoff.
+async function startCartCheckout(items) {
+  const res = await fetch('/api/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      kind: 'cart',
+      items: items.map((i) => ({
+        productId: i.productId,
+        colourway: i.colourway,
+        size: i.size,
+        qty: i.qty,
+      })),
+      successUrl: `${window.location.origin}/shop?paid=1`,
+    }),
+  })
+  if (!res.ok) throw new Error('Checkout failed to start.')
+  return res.json()
+}
+
+// Fallback when no payment provider is configured on this deployment.
 function doCheckoutHandoff() {
   window.open('https://maderunning.com', '_blank', 'noopener,noreferrer')
 }
@@ -639,6 +688,29 @@ export default function Shop() {
   const [cart, setCart] = useState(() => getCart())
   const [basketOpen, setBasketOpen] = useState(false)
   const [activeCategory, setActiveCategory] = useState('all')
+  const [checkoutBusy, setCheckoutBusy] = useState(false)
+  const [checkoutError, setCheckoutError] = useState('')
+  const [justPaid, setJustPaid] = useState(false)
+
+  // ── Square's return leg ─────────────────────────────────────────────
+  // startCartCheckout sends `${origin}/shop?paid=1` as the redirect_url.
+  // Landing back here with the basket still full reads as "the payment
+  // didn't take", so the basket is cleared and a thank-you shown instead.
+  // The param is then STRIPPED via replaceState: a refresh or a shared
+  // URL must not re-announce a payment that happened once. Read from
+  // window.location rather than a router hook because this component is
+  // mounted at two paths (/shop public, /app/shop member) and should
+  // depend on neither.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('paid') !== '1') return
+    clearCart()
+    setCart([])
+    setJustPaid(true)
+    params.delete('paid')
+    const qs = params.toString()
+    window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''))
+  }, [])
 
   const count = cartCount(cart)
 
@@ -654,8 +726,31 @@ export default function Shop() {
     setCart(removeFromCart(key))
   }, [])
 
-  const handleCheckout = useCallback(() => {
-    doCheckoutHandoff()
+  const handleCheckout = useCallback(async () => {
+    setCheckoutBusy(true)
+    setCheckoutError('')
+    try {
+      const data = await startCartCheckout(getCart())
+      if (data?.url) {
+        // Same-tab redirect: the member is leaving to pay, and Square's
+        // redirect_url brings them back. The basket survives in
+        // localStorage either way.
+        window.location.assign(data.url)
+        return // deliberately leave the button busy during navigation
+      }
+      if (data?.demo) {
+        // No payment provider on this deployment — the ONLY case that
+        // hands off to the external storefront.
+        doCheckoutHandoff()
+      } else {
+        setCheckoutError('Checkout could not start. Please try again.')
+      }
+    } catch {
+      // A failed START is not a failed payment: the basket is intact, so
+      // say so here rather than bouncing the customer to another website.
+      setCheckoutError('Checkout could not start. Please check your connection and try again.')
+    }
+    setCheckoutBusy(false)
   }, [])
 
   const filtered =
@@ -704,6 +799,34 @@ export default function Shop() {
           )}
         </button>
       </PageHead>
+
+      {/* Post-payment thank-you. Rendered only on the ?paid=1 return from
+          Square (see the effect above) — never persisted, never styled as
+          a dismissible toast that could be missed. role="status" so screen
+          readers announce it without stealing focus. */}
+      {justPaid && (
+        <div
+          role="status"
+          className="card"
+          style={{
+            padding: 'var(--s5)',
+            marginBottom: 'var(--s5)',
+            borderLeft: '3px solid var(--ok)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--s4)',
+          }}
+        >
+          <ShoppingBag size={20} style={{ color: 'var(--ok)', flexShrink: 0 }} />
+          <div>
+            <div style={{ fontWeight: 700 }}>Payment received{' \u2014 '}thank you.</div>
+            <div className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
+              Your order is confirmed. A receipt has been sent to the email you
+              gave at checkout.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Category filter — pill toggle strip */}
       <div
@@ -762,6 +885,8 @@ export default function Shop() {
           onQty={handleQty}
           onRemove={handleRemove}
           onCheckout={handleCheckout}
+          checkoutBusy={checkoutBusy}
+          checkoutError={checkoutError}
         />
       )}
     </div>

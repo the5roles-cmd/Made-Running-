@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { loginHref } from '../lib/authNext'
 import { REGISTRATION_OPEN } from '../lib/registration'
+import { InstagramMark } from '../components/BrandMarks'
 import {
   ArrowRight,
   CheckCircle2,
@@ -33,6 +34,21 @@ import {
 const PRODUCT = 'Made Running'
 const PRODUCT_MARK = 'M'
 const PRODUCT_TAGLINE = 'Manchester · UAE · US'
+
+// ── The club's own channels ──────────────────────────────────────────────
+// Named here rather than inlined at the one <a> that uses it today, because
+// the marquee already claims "85k Instagram community" a few sections up and
+// the share row offers to post there. The moment a second link appears, the
+// two must not be able to drift apart.
+//
+// The ?hl=en the club gave us is dropped deliberately: it pins the page to
+// English for everyone, including the UAE and US chapters this site names in
+// its own tagline. Instagram localises from the viewer's own account
+// otherwise, which is the better default and is what the bare profile URL
+// gives. Nothing else about the destination changes.
+const SOCIALS = {
+  instagram: 'https://www.instagram.com/made.running/',
+}
 
 // ── Scroll-reveal: hardened IntersectionObserver + sweep fallback ──
 //
@@ -197,10 +213,12 @@ const QUICK_PATHS = [
   { dest: '/join', key: 'community', label: 'Join the Community', meta: 'Everyone welcome' },
   // Shop sits third — dead centre of the five — so the club's revenue door
   // is the one the eye lands on first as it scans the row. It points at the
-  // in-app storefront rather than maderunning.com: an external link could
-  // never be gated, and it contradicted the "Coming soon" pill further down
-  // the page.
-  { dest: '/app/shop', label: 'Shop', meta: 'Kit in the club colours' },
+  // PUBLIC /shop mount, not /app/shop: the shop is open and buying a tee is
+  // not a membership question, so this card must not route through /login.
+  // `public: true` is what skips the loginHref wrap in the render below —
+  // same mechanism /book uses. The "Shop Now" CTA in section 6b goes to the
+  // same door, so card and CTA can never disagree.
+  { dest: '/shop', public: true, label: 'Shop', meta: 'Kit in the club colours' },
   // The only card that does NOT go through /login, and the only one that is a
   // real <a href> rather than a <Link>.
   //
@@ -964,20 +982,30 @@ export default function Landing() {
         .tp-shop__h2 {
           color: #fff;
         }
-        /* Reads as a status pill, not a button — outlined and muted rather
-           than the solid accent fill, so nobody tries to click it. */
-        .tp-shop__soon {
+        /* The shop is OPEN now, so this reads as a button, not a status
+           pill: solid white on the dark section — the same treatment the
+           hero gives its primary CTA on film — with the shared 7px radius
+           and 44px minimum target of .tp-btn-primary. */
+        .tp-shop__now {
           display: inline-flex;
           align-items: center;
-          padding: 11px 22px;
-          border-radius: 999px;
-          border: 1px solid rgba(255,255,255,0.22);
-          background: rgba(255,255,255,0.04);
+          gap: 8px;
+          padding: 13px 24px;
+          min-height: 44px;
+          border-radius: 7px;
+          border: 1px solid #ffffff;
+          background: #ffffff;
           font-size: 0.78rem;
-          font-weight: 600;
+          font-weight: 700;
           letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: rgba(255,255,255,0.72);
+          color: #1c1c1c;
+          text-decoration: none;
+          transition: filter 200ms;
+        }
+        .tp-shop__now:hover {
+          filter: brightness(0.94);
+          text-decoration: none;
         }
         @media (max-width: 860px) {
           .tp-shop { grid-template-columns: 1fr; }
@@ -1197,6 +1225,35 @@ export default function Landing() {
         .tp-footer__copy {
           font-size: 0.68rem;
           color: rgba(255,255,255,0.25);
+        }
+        /* The club's Instagram. Sized to 44px so it meets the touch-target
+           minimum on a phone, where the footer is a single stacked column and
+           this is the only tappable thing in it. The icon itself is 18px;
+           the rest is hit box. */
+        .tp-footer__social {
+          display: inline-grid;
+          place-items: center;
+          width: 44px;
+          height: 44px;
+          border-radius: 999px;
+          color: rgba(255,255,255,0.55);
+          transition: color 160ms ease, background 160ms ease;
+        }
+        .tp-footer__social:hover {
+          color: #fff;
+          background: rgba(255,255,255,0.1);
+        }
+        /* Below :hover, not above — identical specificity, and a phone fires
+           both on one tap, so whichever is written last wins. app.css removes
+           the grey tap flash globally; this pays that back for this control. */
+        @media (hover: none) and (pointer: coarse) {
+          .tp-footer__social:active {
+            color: #fff;
+            background: rgba(255,255,255,0.16);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .tp-footer__social { transition: none; }
         }
 
         /* ── Community media wall (Run It. Share It.) ─────────── */
@@ -1508,16 +1565,20 @@ export default function Landing() {
               It started with a run<br />and an open invitation.
             </p>
             <p className="tp-lede tp-story__p">
-              Made Running began in Manchester with a simple idea: put a run on the
-              calendar, tell everyone they are welcome, and wait at the top of the hill
-              for whoever needs the extra minute. No membership. No qualifying pace.
-              No one left behind.
+              Made Running was founded by Hermen Dange in Manchester in 2023, after
+              running became a turning point in his own life. Having discovered
+              running while incarcerated, Hermen experienced first-hand how movement
+              could create structure, discipline and purpose. After his release, he
+              turned that experience into a movement built around one simple belief:
+              No One Gets Left Behind.
             </p>
             <p className="tp-lede tp-story__p">
-              That invitation travelled. What began as one city is now five chapters
-              across three countries, a community of thousands, and a name that
-              everyone now comes looking for. The run never changed &mdash; more
-              people just started showing up.
+              What started with just nine people has grown into one of Europe&rsquo;s
+              fastest-growing and biggest fitness communities, bringing thousands of
+              people together through our run club, clothing brand and dedicated gym
+              space. Made Running is more than running &mdash; it&rsquo;s a community
+              built around movement, connection and becoming the best version of
+              yourself.
             </p>
             <div className="tp-stats">
               <div className="tp-stat">
@@ -1564,11 +1625,14 @@ export default function Landing() {
             carries the line that started it &mdash; and you will spot it on
             every start line from Manchester to Dubai.
           </p>
-          {/* Deliberately not a link. A control labelled "Coming soon" that
-              navigates to a live storefront promises one thing and does
-              another; when the shop opens, swap this <span> back for the
-              <a href="https://maderunning.com"> that was here. */}
-          <span className="tp-shop__soon">Coming soon</span>
+          {/* The swap the old comment here promised, with one change: the
+              shop opened as OUR public /shop route, not the external
+              maderunning.com <a> that predated it — so this is a <Link>,
+              and it lands on the same storefront the quick card above and
+              the member door at /app/shop share. */}
+          <Link to="/shop" className="tp-shop__now">
+            Shop Now <ArrowRight size={14} />
+          </Link>
         </Reveal>
       </section>
 
@@ -1660,6 +1724,20 @@ export default function Landing() {
         <address className="tp-footer__addr">
           Made Running, Manchester, M8 8HQ
         </address>
+        {/* The one outbound social link. target=_blank because the visitor is
+            mid-scroll on a page that took deliberate effort to reach the
+            bottom of; replacing it with Instagram makes "back" the price of
+            curiosity. rel on principle: noopener severs window.opener,
+            noreferrer keeps this page out of Instagram's referrer logs. */}
+        <a
+          className="tp-footer__social"
+          href={SOCIALS.instagram}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Made Running on Instagram"
+        >
+          <InstagramMark size={18} />
+        </a>
         <span className="tp-footer__copy">
           &copy; {new Date().getFullYear()} Made Running &mdash; &ldquo;No One Gets Left Behind&rdquo;
         </span>

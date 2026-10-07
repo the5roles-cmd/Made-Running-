@@ -171,6 +171,38 @@ function refusalMessage(reason) {
   )
 }
 
+// ── Payment link (Square via /api/checkout) ───────────────────────
+// Returns a hosted-payment-page URL, or null for BOTH "no provider
+// configured" ({ demo: true }) and any failure. Null is safe here because
+// the caller treats it as "the club will send a payment link" — the
+// booking itself is never at risk from a payment hiccup.
+//
+// Note what is NOT sent: a price. The server prices class places itself
+// (see api/checkout.js) so DevTools cannot negotiate a discount. The
+// bookingId doubles as the idempotency key server-side, so a retried
+// request gets the SAME link back rather than a duplicate order.
+async function fetchClassPayLink({ bookingId, title, places, email }) {
+  try {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        kind: 'class',
+        bookingId,
+        title,
+        places,
+        email,
+        successUrl: `${window.location.origin}/book?paid=1`,
+      }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data?.url || null
+  } catch {
+    return null
+  }
+}
+
 export default function BookGym() {
   // `user` may legitimately be null — this page is public. It is used only to
   // pre-fill the booking form and soften the copy, never to gate access.
@@ -192,10 +224,11 @@ export default function BookGym() {
   const [places, setPlaces] = useState(1)
 
   // ── Payment ──────────────────────────────────────────────────────
-  // 'on_arrival' is the default because it is the only one of the two that
-  // works today: Stripe has no key in this project yet, so 'online' ends at
-  // a placeholder. Defaulting to the working path means the demo never
-  // dead-ends unless someone deliberately chooses the unfinished branch.
+  // 'on_arrival' stays the default even though 'online' is real now
+  // (Square payment links via /api/checkout): cash on the door is how most
+  // of the club pays today, and on a deployment with no Square token the
+  // online branch degrades to "the club will send a payment link" — honest,
+  // but not a dead end anyone should fall into by default.
   const [payMethod, setPayMethod] = useState('on_arrival')
 
   // Set when the database refuses the booking for lack of room. Held as an
@@ -408,13 +441,34 @@ export default function BookGym() {
           }
           // else: fall through to the offline confirmation below
         } else if (data?.ok) {
+          const placesBooked = data.places ?? (bookedFor === 'group' ? places : 1)
+          // 'Pay online' is real now: ask the checkout endpoint for a
+          // Square-hosted payment link. Done BEFORE setDone so the
+          // confirmation renders once, complete — but a payment failure
+          // never blocks the booking: the seat is already held in the
+          // database, so payUrl stays null and the confirmation falls
+          // back to "the club will send you a payment link".
+          //
+          // Surfaced as a button on the confirmation rather than an
+          // auto-redirect: the same screen hands over the manage token,
+          // which a guest can NEVER recover if we navigate away first.
+          const payUrl =
+            payMethod === 'online'
+              ? await fetchClassPayLink({
+                  bookingId: data.manage_token || null,
+                  title: data.class_name || active.title,
+                  places: placesBooked,
+                  email: email.trim() || undefined,
+                })
+              : null
           setDone({
             title: data.class_name || active.title, live: true,
-            places: data.places ?? (bookedFor === 'group' ? places : 1),
+            places: placesBooked,
             payMethod: data.payment_method || payMethod,
             total: data.total_pennies ?? (priceOf(active) * (bookedFor === 'group' ? places : 1)),
             startsAt: data.starts_at || null,
             seatsLeft: data.seats_left ?? null,
+            payUrl,
             // Step 11: a guest has no login, so this token is their ONLY way
             // back to their own booking to cancel it. Kept in state so the
             // confirmation screen can hand it over — if it is lost here it
@@ -526,16 +580,38 @@ export default function BookGym() {
             {done.total > 0 && (
               <p className="bk__donePay">
                 {done.payMethod === 'online' ? (
-                  <>
-                    <strong>{fmtPrice(done.total)}</strong> to pay — the club will send
-                    you a payment link.
-                  </>
+                  done.payUrl ? (
+                    <>
+                      <strong>{fmtPrice(done.total)}</strong> to pay — use the secure
+                      payment button below.
+                    </>
+                  ) : (
+                    <>
+                      <strong>{fmtPrice(done.total)}</strong> to pay — the club will send
+                      you a payment link.
+                    </>
+                  )
                 ) : (
                   <>
                     <strong>{fmtPrice(done.total)}</strong> to pay on arrival.
                   </>
                 )}
               </p>
+            )}
+
+            {/* Square-hosted payment page. A NEW TAB, deliberately: this
+                confirmation also carries the manage-booking token below,
+                which is shown exactly once. Navigating this tab to Square
+                would destroy the only screen that token appears on. */}
+            {done.payUrl && (
+              <a
+                className="bk__btn bk__btn--primary"
+                href={done.payUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Pay {fmtPrice(done.total)} now — secure checkout
+              </a>
             )}
 
             {/* ── Step 11: how a GUEST cancels ─────────────────────────
@@ -717,13 +793,14 @@ export default function BookGym() {
                   <strong>{fmtPrice(priceOf(active) * places)}</strong>
                 </p>
 
-                {/* Said plainly rather than hidden. Card payment is not wired
-                    up yet, and a member who picks it and then gets a normal
-                    confirmation would believe they had already paid. */}
+                {/* Sets the expectation for the next screen: the space is
+                    held first, THEN they pay on Square's page. Without this
+                    line, landing back on a confirmation with a pay button
+                    reads as "did my booking even work?". */}
                 {payMethod === 'online' && (
-                  <p className="bk__hint bk__hint--warn">
-                    Card payment isn&rsquo;t switched on yet. Choosing this reserves
-                    your space and the club will send a payment link.
+                  <p className="bk__hint">
+                    Your space is reserved first — then pay securely by card
+                    on the confirmation screen.
                   </p>
                 )}
               </fieldset>
@@ -1790,6 +1867,10 @@ const BOOK_CSS = `
   transition: opacity 200ms ease, background-color 200ms ease;
 }
 .bk__btn--primary { flex: 1; border: 0; background: var(--accent); color: #fff; }
+/* The "Pay now" control on the confirmation is an <a> (it navigates to
+   Square's hosted page), not a <button>. Same box, minus the anchor
+   defaults it would otherwise inherit. */
+a.bk__btn { text-decoration: none; }
 .bk__btn--primary:hover { opacity: 0.9; }
 .bk__btn--primary:disabled { opacity: 0.55; cursor: default; }
 .bk__btn--ghost { border: 1px solid var(--line); background: transparent; color: var(--ink); }

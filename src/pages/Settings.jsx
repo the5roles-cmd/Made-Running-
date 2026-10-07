@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { User, Building2, KeyRound, LogOut, Check } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
-import { supabase, supabaseConfigured } from '../lib/supabase'
+import { supabase, supabaseConfigured, friendlyError } from '../lib/supabase'
 import { PageHead } from '../components/ui'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ function ProfileSection({ user }) {
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (e) {
-      setErr(e.message || 'Could not save profile.')
+      setErr(friendlyError(e, 'Could not save profile.'))
     } finally {
       setSaving(false)
     }
@@ -290,7 +290,7 @@ function SecuritySection({ updatePassword }) {
       setConfirmPw('')
       setTimeout(() => setSaved(false), 4000)
     } catch (e) {
-      setErr(e.message || 'Could not update password.')
+      setErr(friendlyError(e, 'Could not update password.'))
     } finally {
       setSaving(false)
     }
