@@ -182,7 +182,7 @@ function refusalMessage(reason) {
 // (see api/checkout.js) so DevTools cannot negotiate a discount. The
 // bookingId doubles as the idempotency key server-side, so a retried
 // request gets the SAME link back rather than a duplicate order.
-async function fetchClassPayLink({ bookingId, title, places, email }) {
+async function fetchClassPayLink({ bookingId, title, places, email, successUrl }) {
   try {
     const res = await fetch('/api/checkout', {
       method: 'POST',
@@ -193,7 +193,10 @@ async function fetchClassPayLink({ bookingId, title, places, email }) {
         title,
         places,
         email,
-        successUrl: `${window.location.origin}/book?paid=1`,
+        // Square sends the payer here AFTER a successful payment. Callers
+        // that hold a manage token aim this at the manage-booking page so
+        // the token survives the round-trip inside the URL itself.
+        successUrl: successUrl || `${window.location.origin}/book?paid=1`,
       }),
     })
     if (!res.ok) return null
@@ -215,7 +218,17 @@ export default function BookGym() {
   const [phone, setPhone] = useState('')
   const [busy, setBusy] = useState(false)
   const [formErr, setFormErr] = useState('')
-  const [done, setDone] = useState(null)
+  // Square's payment page sends the payer back here with ?paid=1 after a
+  // successful card payment (fetchClassPayLink's successUrl). Landing on a
+  // bare timetable after paying reads as "did that go through?" — so the
+  // return trip opens on a receipt, not a reset form. Lazy initialiser:
+  // read once on mount, never re-parsed on re-render.
+  const [done, setDone] = useState(() =>
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('paid') === '1'
+      ? { paidReturn: true, total: 0 }
+      : null
+  )
 
   // ── Step 4b: who the booking is for ──────────────────────────────
   // Mirrors class_bookings.booked_for exactly ('me' | 'someone_else' |
@@ -480,15 +493,19 @@ export default function BookGym() {
         } else if (data?.ok) {
           const placesBooked = data.places ?? (bookedFor === 'group' ? places : 1)
           // 'Pay online' is real now: ask the checkout endpoint for a
-          // Square-hosted payment link. Done BEFORE setDone so the
-          // confirmation renders once, complete — but a payment failure
-          // never blocks the booking: the seat is already held in the
-          // database, so payUrl stays null and the confirmation falls
-          // back to "the club will send you a payment link".
+          // Square-hosted payment link. A payment failure never blocks the
+          // booking: the seat is already held in the database, so payUrl
+          // stays null and the confirmation falls back to "the club will
+          // send you a payment link".
           //
-          // Surfaced as a button on the confirmation rather than an
-          // auto-redirect: the same screen hands over the manage token,
-          // which a guest can NEVER recover if we navigate away first.
+          // The member chose "pay online", so they are TAKEN to the card
+          // page (window.location.assign below) rather than parked on a
+          // confirmation with one more button to find — the club's
+          // instruction, twice. The manage token is not lost by leaving:
+          // Square's redirect_url is the manage-booking page itself, so
+          // the token rides home in the URL after payment. The screen
+          // behind the redirect still renders the button, which is the
+          // fallback if navigation is ever blocked.
           const payUrl =
             method === 'online'
               ? await fetchClassPayLink({
@@ -496,6 +513,9 @@ export default function BookGym() {
                   title: data.class_name || active.title,
                   places: placesBooked,
                   email: email.trim() || undefined,
+                  successUrl: data.manage_token
+                    ? `${window.location.origin}/booking/${data.manage_token}?paid=1`
+                    : undefined,
                 })
               : null
           setDone({
@@ -514,6 +534,10 @@ export default function BookGym() {
           })
           setActive(null)
           setBusy(false)
+          // Straight to the card page. setDone has already run, so if this
+          // navigation is blocked the confirmation + pay button render as
+          // the fallback instead of a dead end.
+          if (payUrl) window.location.assign(payUrl)
           return
         } else {
           // A refusal. Each reason gets its own sentence because each has a
@@ -575,6 +599,8 @@ export default function BookGym() {
     })
     setActive(null)
     setBusy(false)
+    // Same rule as the live path: "pay online" means the card page, now.
+    if (offlinePayUrl) window.location.assign(offlinePayUrl)
   }
 
   return (
@@ -604,12 +630,19 @@ export default function BookGym() {
           <div className="bk__panel bk__panel--done" role="status">
             <CheckCircle2 size={38} className="bk__doneIcon" aria-hidden="true" />
             <h2 className="bk__doneTitle">
-              {done.waitlisted
-                ? "You're on the list."
-                : done.live ? "You're booked in." : "Request sent."}
+              {done.paidReturn
+                ? 'Payment received.'
+                : done.waitlisted
+                  ? "You're on the list."
+                  : done.live ? "You're booked in." : "Request sent."}
             </h2>
             <p className="bk__doneBody">
-              {done.waitlisted ? (
+              {done.paidReturn ? (
+                <>
+                  Your payment has gone through &mdash; that&rsquo;s everything done.
+                  A coach will check you in on the day. See you there.
+                </>
+              ) : done.waitlisted ? (
                 <>
                   You&rsquo;re{' '}
                   {done.position
@@ -647,8 +680,8 @@ export default function BookGym() {
                 {done.payMethod === 'online' ? (
                   done.payUrl ? (
                     <>
-                      <strong>{fmtPrice(done.total)}</strong> to pay — use the secure
-                      payment button below.
+                      <strong>{fmtPrice(done.total)}</strong> to pay — taking you to
+                      secure checkout. If nothing happens, use the button below.
                     </>
                   ) : (
                     <>
@@ -664,10 +697,13 @@ export default function BookGym() {
               </p>
             )}
 
-            {/* Square-hosted payment page. A NEW TAB, deliberately: this
-                confirmation also carries the manage-booking token below,
-                which is shown exactly once. Navigating this tab to Square
-                would destroy the only screen that token appears on. */}
+            {/* Square-hosted payment page. This screen is normally never
+                seen — submit() navigates straight to Square — so this
+                button is the fallback for a blocked navigation. New tab
+                here, deliberately: by the time someone is reading this,
+                the auto-redirect has already failed once in this tab, and
+                this confirmation still carries the manage-booking token
+                below, shown exactly once. */}
             {done.payUrl && (
               <a
                 className="bk__btn bk__btn--primary"
