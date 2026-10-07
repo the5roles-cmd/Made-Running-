@@ -50,11 +50,10 @@ begin
     (v_org, 'hot-kettlebells-mon-0930', 'Hot Kettlebells', 'Jade',    1, '09:30', true,  false, null, null, 40, 1000),
     (v_org, 'hot-kettlebells-mon-1930', 'Hot Kettlebells', 'Micah',   1, '19:30', false, false, null, null, 40, 1000),
 
-    -- Tuesday. The 5am HIIT is paused, not deleted: it stays visible on the
-    -- timetable with its reason, because hiding it reads as "cancelled" to
-    -- members who know it exists.
-    (v_org, 'hiit-tue-0500',            'HIIT',            'Hermen',  2, '05:00', false, true,
-      'Starting back next week', null, 40, 1000),
+    -- Tuesday. The 5am HIIT was seeded paused ("starting back next week"
+    -- on the club's PDF); the club confirmed it is running again (Oct
+    -- 2026), so it seeds live like every other class.
+    (v_org, 'hiit-tue-0500',            'HIIT',            'Hermen',  2, '05:00', false, false, null, null, 40, 1000),
     (v_org, 'catch-a-circuit-tue-1830', 'CaTcH a Circuit', 'Jade',    2, '18:30', false, false, null, null, 40, 1000),
 
     -- Wednesday
