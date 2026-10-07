@@ -6,9 +6,11 @@
 // built here. With no provider configured the endpoint answers
 // { demo: true } and the old external handoff keeps the flow demonstrable.
 //
-// CSS-only product imagery: each product "shot" is a layered gradient + bold
-// typography composition. No photographs are sourced or hotlinked — house rule
-// consistent with the landing page.
+// Product imagery: each product "shot" is a layered gradient + bold
+// typography composition, EXCEPT where the club has supplied its own
+// photograph (products.js `image` field — currently the Motto Tee). No
+// photographs are ever sourced or hotlinked — house rule consistent with
+// the landing page; the club's own artwork is the one thing that beats it.
 
 import { useState, useCallback, useEffect } from 'react'
 import { ShoppingCart, ShoppingBag, Plus, Minus, X, Shirt } from 'lucide-react'
@@ -165,6 +167,38 @@ function ShapeGlyph({ shape, color }) {
 }
 
 function ProductImage({ product }) {
+  // A real photograph beats a CSS composition — WHEN the club has supplied
+  // one (the "no photographs" house rule bans SOURCED/hotlinked stock, not
+  // the club's own product shots). Same 4:3 frame as the CSS cards so the
+  // grid stays rhythmic, but object-fit: CONTAIN, not cover: the frame is
+  // landscape and garment shots are portrait, and cover would crop the
+  // sleeves and hem off the product being sold. The frame is painted the
+  // same warm grey as the shot's own backdrop so the letterboxing reads as
+  // part of the photograph rather than as empty bars.
+  if (product.image) {
+    return (
+      <div
+        style={{
+          background: '#eceae6',
+          borderRadius: 'var(--radius)',
+          aspectRatio: '4/3',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          userSelect: 'none',
+        }}
+      >
+        <img
+          src={product.image}
+          alt={product.imageAlt || product.name}
+          loading="lazy"
+          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+        />
+      </div>
+    )
+  }
+
   const vis = PRODUCT_VISUALS[product.id] || {
     bg: 'linear-gradient(135deg, #1c1c1c 0%, #3a3a3a 100%)',
     accent: '#ffffff',

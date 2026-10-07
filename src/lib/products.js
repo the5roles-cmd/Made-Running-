@@ -40,6 +40,13 @@ export const PRODUCTS = [
     sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
     badge: null,
     soldOutVariants: ['White|XS'],
+    // The club's OWN product shot (supplied by Made Running), not sourced
+    // stock — which is why this is the one product with a photograph while
+    // the rest keep their CSS compositions. Lives in public/shop/ so Vite
+    // copies it verbatim; ProductImage prefers `image` over the CSS visual
+    // wherever this product renders (grid card AND basket thumbnail).
+    image: '/shop/motto-tee-back.jpg',
+    imageAlt: 'White Motto Tee, back view \u2014 NO ONE GETS LEFT BEHIND printed in bold black italics with the MADE wordmark beneath',
   },
   {
     id: 'mr-tee-02',
