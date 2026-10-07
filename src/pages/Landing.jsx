@@ -1456,11 +1456,20 @@ export default function Landing() {
           background: #000;
           object-fit: cover;
         }
-        .tp-ugc__pair {
+        /* Three portrait films under the banner (corporate, the new club
+           video, and the 30s film with sound). 300px columns: three of
+           them plus gaps still fit the 1080px content column with air. */
+        .tp-ugc__row {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 320px));
+          grid-template-columns: repeat(3, minmax(0, 300px));
           justify-content: center;
           gap: 14px;
+        }
+        @media (max-width: 860px) {
+          /* Three-across below ~860px squeezes each film under ~250px and
+             the sound film's controls with it — stack them centred at
+             phone-screen width instead. */
+          .tp-ugc__row { grid-template-columns: minmax(0, 320px); }
         }
         .tp-ugc__tall {
           width: 100%;
@@ -1507,9 +1516,9 @@ export default function Landing() {
           /* A 21:9 strip at 360px wide is a ribbon — give the banner its
              native shape back on phones. */
           .tp-ugc__land { aspect-ratio: 16 / 9; }
-          /* Side-by-side portraits at ~170px each would shrink the sound
-             film's controls below tappable size; stack them centred. */
-          .tp-ugc__pair { grid-template-columns: minmax(0, 320px); }
+          /* Side-by-side portraits at ~115px each would shrink the sound
+             film's controls below tappable size; the 860px rule already
+             stacked the row to one centred column, which holds here too. */
         }
 
       `}</style>
@@ -1792,20 +1801,20 @@ export default function Landing() {
       </section>
 
       {/* ── 7. Community film wall ────────────────────────────────
-          "Run It. Share It." now carries the club's own three films (the
+          "Run It. Share It." now carries the club's own four films (the
           "Made running homepage videos" folder, transcoded to H.264 so
           every browser plays them) — they replaced the old photo mosaic
           at the club's instruction. The landscape loop is the banner; the
-          two portrait films sit beneath it. Corporate is ambience — muted,
-          playing only while on screen. The 30-second film has sound, so it
-          waits for a tap: controls, poster, preload="none" — zero cost
-          until someone chooses it. */}
+          three portrait films sit in a row beneath it. Corporate and the
+          club video are ambience — muted, playing only while on screen.
+          The 30-second film has sound, so it waits for a tap: controls,
+          poster, preload="none" — zero cost until someone chooses it. */}
       <section className="tp-ugc" aria-labelledby="ugc-title">
         <Reveal className="tp-ugc__head" as="div">
           <div className="tp-eyebrow">The community</div>
           <h2 className="tp-ugc__title" id="ugc-title">Run It. Share It.</h2>
           <p className="tp-ugc__sub">
-            Shot on the runs and in the Hub. The tall one has sound &mdash;
+            Shot on the runs and in the Hub. One film has sound &mdash;
             press play. Tag <strong>@made.running</strong> or{' '}
             <strong>#NoOneGetsLeftBehind</strong> to be featured.
           </p>
@@ -1822,7 +1831,7 @@ export default function Landing() {
             />
             <FilmShare src="/video/made-film-wide.mp4" title="Made Running — the crew out on a run" />
           </figure>
-          <div className="tp-ugc__pair">
+          <div className="tp-ugc__row">
             <figure className="tp-ugc__filmcell">
               <AmbientFilm
                 className="tp-ugc__tall"
@@ -1831,6 +1840,15 @@ export default function Landing() {
                 alt="Made Running brand film."
               />
               <FilmShare src="/video/made-corporate.mp4" title="Made Running" />
+            </figure>
+            <figure className="tp-ugc__filmcell">
+              <AmbientFilm
+                className="tp-ugc__tall"
+                src="/video/made-running-video.mp4"
+                poster="/video/made-running-video-poster.jpg"
+                alt="Made Running club video."
+              />
+              <FilmShare src="/video/made-running-video.mp4" title="Made Running" />
             </figure>
             <figure className="tp-ugc__filmcell">
               <video
