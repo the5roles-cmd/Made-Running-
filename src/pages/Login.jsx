@@ -313,21 +313,18 @@ export default function Login() {
 
         {/* ── Auth card ────────────────────────────────── */}
         <div className="card card--raised" style={{ padding: 'var(--s6)' }}>
-          {/* Was "Coaches & Staff", which described the page accurately when
-              only the coach card pointed here. All five doors do now, so a
-              runner arriving from "I am a Runner" would have been told this
-              form was not for them. */}
-          <div className="eyebrow" style={{ marginBottom: 'var(--s3)', textAlign: 'center' }}>
-            Runners, coaches &amp; staff
-          </div>
+          {/* The "Runners, coaches & staff" eyebrow that sat here was
+              removed at the club's instruction (Oct 2026): the toggle
+              below already names both actions, so the card needs no
+              audience label above them. */}
           {/* Segmented toggle — hidden in 'forgot' mode, where neither tab
               is truthfully "on" and a lit segment would misdescribe the
               panel below it. The back link inside that panel is the way out.
 
               Also hidden entirely when registration is closed: a two-tab
               switch with one tab left is not a switch, it is a heading that
-              looks clickable. The eyebrow above and the submit button below
-              both say "sign in", so nothing is lost by removing it.
+              looks clickable. The submit button below already says
+              "sign in", so nothing is lost by removing it.
 
               The signup fields further down stay in the file on purpose —
               they are gated on this flag, not deleted, so flipping
