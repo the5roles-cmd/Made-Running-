@@ -366,6 +366,71 @@ function AmbientFilm({ src, poster, alt, className }) {
   )
 }
 
+// ── Film share: "Run It. Share It." taken literally ─────────────────
+//
+// The club's instruction: the wall's films must let a visitor share them
+// on Instagram (instagram.com/made.running). Instagram has no web URL
+// that accepts a video upload, so this is a ladder of honest options:
+//
+//   1. navigator.share with the actual FILE — on phones the native share
+//      sheet lists Instagram, and handing it the video file (not a link)
+//      is the one form Instagram accepts for a Story. The fetch happens
+//      only on tap, so nobody pays the megabytes for a button they never
+//      press; the file usually comes straight from the browser's cache
+//      because the film is already playing above the button.
+//   2. navigator.share with the URL — for devices that share but refuse
+//      files; the sheet still reaches Instagram DMs and everything else.
+//   3. The club's own Instagram profile in a new tab — the desktop
+//      fallback, because a dead button would be worse than a doorway.
+//
+// AbortError is the user closing the sheet. That is a decision, not a
+// failure — it must NOT cascade to the next rung, or dismissing the
+// sheet would instantly reopen a second one.
+function FilmShare({ src, title }) {
+  const [busy, setBusy] = useState(false)
+
+  async function share() {
+    if (busy) return
+    setBusy(true)
+    const url = new URL(src, window.location.origin).href
+    const text = 'Tag @made.running #NoOneGetsLeftBehind'
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.canShare === 'function') {
+        try {
+          const res = await fetch(src)
+          if (res.ok) {
+            const blob = await res.blob()
+            const file = new File([blob], src.split('/').pop(), { type: 'video/mp4' })
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({ files: [file], title, text })
+              return
+            }
+          }
+        } catch (err) {
+          if (err?.name === 'AbortError') return // sheet dismissed — done
+          // any other failure falls through to the URL rung
+        }
+      }
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+        await navigator.share({ url, title, text })
+        return
+      }
+      window.open(SOCIALS.instagram, '_blank', 'noopener')
+    } catch (err) {
+      if (err?.name !== 'AbortError') window.open(SOCIALS.instagram, '_blank', 'noopener')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button type="button" className="tp-ugc__share" onClick={share} disabled={busy}>
+      <InstagramMark size={13} />
+      <span>{busy ? 'Opening\u2026' : 'Share on Instagram'}</span>
+    </button>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────
 export default function Landing() {
   useEffect(() => {
@@ -1405,6 +1470,39 @@ export default function Landing() {
           background: #000;
           object-fit: cover;
         }
+        /* A film plus its own share control. <figure> margin reset because
+           browsers hand figures a 40px indent nobody asked for. */
+        .tp-ugc__filmcell {
+          margin: 0;
+          min-width: 0;
+          display: grid;
+          gap: 10px;
+          justify-items: center;
+        }
+        .tp-ugc__filmcell > video { width: 100%; }
+        .tp-ugc__share {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 44px; /* thumb-sized — this is a phone-first control */
+          padding: 0 18px;
+          border-radius: 999px;
+          border: 1px solid var(--line);
+          background: transparent;
+          color: rgba(255, 255, 255, 0.85);
+          font: inherit;
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: border-color 200ms ease-out, color 200ms ease-out;
+        }
+        .tp-ugc__share:hover { border-color: rgba(255, 255, 255, 0.55); color: #fff; }
+        .tp-ugc__share:disabled { opacity: 0.6; cursor: default; }
+        @media (prefers-reduced-motion: reduce) {
+          .tp-ugc__share { transition: none; }
+        }
         @media (max-width: 640px) {
           /* A 21:9 strip at 360px wide is a ribbon — give the banner its
              native shape back on phones. */
@@ -1713,28 +1811,39 @@ export default function Landing() {
           </p>
         </Reveal>
         <Reveal className="tp-ugc__films" as="div">
-          <AmbientFilm
-            className="tp-ugc__land"
-            src="/video/made-film-wide.mp4"
-            poster="/video/made-film-wide-poster.jpg"
-            alt="Made Running film: the crew out on a run."
-          />
-          <div className="tp-ugc__pair">
+          {/* Each film is a cell: the film plus its own share control —
+              "Run It. Share It." with the verb actually wired up. */}
+          <figure className="tp-ugc__filmcell">
             <AmbientFilm
-              className="tp-ugc__tall"
-              src="/video/made-corporate.mp4"
-              poster="/video/made-corporate-poster.jpg"
-              alt="Made Running brand film."
+              className="tp-ugc__land"
+              src="/video/made-film-wide.mp4"
+              poster="/video/made-film-wide-poster.jpg"
+              alt="Made Running film: the crew out on a run."
             />
-            <video
-              className="tp-ugc__tall"
-              src="/video/made-film-tall.mp4"
-              poster="/video/made-film-tall-poster.jpg"
-              controls
-              playsInline
-              preload="none"
-              aria-label="Made Running film with sound: thirty seconds inside the club."
-            />
+            <FilmShare src="/video/made-film-wide.mp4" title="Made Running — the crew out on a run" />
+          </figure>
+          <div className="tp-ugc__pair">
+            <figure className="tp-ugc__filmcell">
+              <AmbientFilm
+                className="tp-ugc__tall"
+                src="/video/made-corporate.mp4"
+                poster="/video/made-corporate-poster.jpg"
+                alt="Made Running brand film."
+              />
+              <FilmShare src="/video/made-corporate.mp4" title="Made Running" />
+            </figure>
+            <figure className="tp-ugc__filmcell">
+              <video
+                className="tp-ugc__tall"
+                src="/video/made-film-tall.mp4"
+                poster="/video/made-film-tall-poster.jpg"
+                controls
+                playsInline
+                preload="none"
+                aria-label="Made Running film with sound: thirty seconds inside the club."
+              />
+              <FilmShare src="/video/made-film-tall.mp4" title="Made Running — inside the club" />
+            </figure>
           </div>
         </Reveal>
       </section>
