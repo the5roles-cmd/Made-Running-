@@ -664,6 +664,16 @@ export default function BookGym() {
                   )}{' '}
                   See you there.
                 </>
+              ) : done.payMethod === 'online' && done.payUrl ? (
+                // An online payer with a live checkout link must never read
+                // that the group chat confirms their space — payment does.
+                // This branch exists for the moment the auto-redirect is
+                // blocked and someone actually reads this screen.
+                <>
+                  We&rsquo;ve got your name down for <strong>{done.title}</strong>. Your space
+                  is secured once your payment goes through — you&rsquo;re being taken to
+                  checkout now. A coach will check you in on the day.
+                </>
               ) : (
                 <>
                   We&rsquo;ve got your name down for <strong>{done.title}</strong>. Spaces are
