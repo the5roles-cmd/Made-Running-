@@ -449,8 +449,14 @@ export default function Landing() {
   // place the visitor pauses, and it sets the depth vocabulary for the rest.
   const heroFilmRef = useParallax(0.1, 1.12)
   const shopImgRef = useParallax(0.07, 1.1)
-  const creedVestRef = useParallax(0.07, 1.1)
-  const creedSupportRef = useParallax(0.07, 1.1)
+  // Gentler than the other surfaces (0.05/1.06 vs 0.07/1.1): both creed
+  // photos are top-anchored so the subjects' heads stay whole, and the
+  // drift budget IS the amount of top edge parallax may hide mid-scroll
+  // — h·(scale−1)/2 each way. At 1.1 that was up to 10% of the frame, a
+  // whole forehead; at 1.06 the worst case is 6%, which the headroom in
+  // both photographs absorbs.
+  const creedVestRef = useParallax(0.05, 1.06)
+  const creedSupportRef = useParallax(0.05, 1.06)
 
   return (
     <div className="tp">
@@ -988,13 +994,15 @@ export default function Landing() {
         }
         /* Both sources are tall portraits dropped into landscape frames, so
            cover() discards most of the vertical extent and the default centre
-           crop lands on the wrong thing. These two numbers are the whole point
-           of each photograph: 30% keeps Hermen and the runner's faces and the
-           linked arms in frame (the subjects sit in the upper third of the
-           marathon photo), 32% keeps the two runners' faces rather than
-           their shoulders. */
-        .tp-creed__img--creed { object-position: 50% 30%; }
-        .tp-creed__img--support { object-position: 50% 32%; }
+           crop lands on the wrong thing. Both photos are TOP-ANCHORED (0%)
+           at the club's instruction ("show the full heads"): the subjects'
+           heads sit at the very top of both frames, so any hidden extent
+           must come off the bottom — legs and tarmac are expendable,
+           foreheads are not. Pairs with the gentler parallax on these two
+           surfaces (see useParallax calls), because the drift budget is
+           exactly how much of this anchored top edge scroll may re-hide. */
+        .tp-creed__img--creed { object-position: 50% 0%; }
+        .tp-creed__img--support { object-position: 50% 0%; }
         .tp-creed__copy {
           padding: clamp(48px, 6vw, 92px) clamp(24px, 4vw, 56px);
           display: flex;
