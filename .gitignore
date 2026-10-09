@@ -42,8 +42,11 @@ pnpm-debug.log*
 
 # ── Raw source media ──────────────────────────────────────────────────────
 # `Made running/made.mp4` is the 44 MB camera-original of the landing hero.
-# The encoded, web-weight derivative that the app actually loads is
-# public/video/made-hero.mp4 (4.9 MB) and that one IS committed.
+# The encoded, web-weight derivatives that the app actually loads are
+# public/video/made-hero-1280.mp4 (2.6 MB, laptops) and made-hero-720.mp4
+# (1.0 MB, phones) and those ARE committed. (The original single 4.9 MB
+# made-hero.mp4 encode was retired in Oct 2026 — it was most of the
+# homepage's first-load weight.)
 #
 # Keeping the original out is not about disk space in the working tree — it
 # is about history. Git stores every version of every file forever, and a

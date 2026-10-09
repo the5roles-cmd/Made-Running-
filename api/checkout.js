@@ -146,8 +146,11 @@ export default async function handler(req, res) {
     // implementation — but fed from the server-priced line items.
     const params = new URLSearchParams()
     params.set('mode', 'payment')
-    params.set('success_url', successUrl || 'https://made-running-platform.vercel.app/book?paid=1')
-    params.set('cancel_url', payload.cancelUrl || 'https://made-running-platform.vercel.app/book?cancelled=1')
+    // Fallback return addresses use the canonical maderunning.co.uk (same
+    // deployment as the Vercel app domain, but the address a customer should
+    // see in their browser after paying).
+    params.set('success_url', successUrl || 'https://maderunning.co.uk/book?paid=1')
+    params.set('cancel_url', payload.cancelUrl || 'https://maderunning.co.uk/book?cancelled=1')
     if (email) params.set('customer_email', email)
     if (order.referenceId) params.set('client_reference_id', order.referenceId)
     order.lineItems.forEach((li, i) => {

@@ -5,19 +5,40 @@
 // EVERY claim on this page is checked against what the code actually does —
 // it describes the three real forms (join, class booking, coach application),
 // names Square as the card handler (true: checkout is a Square-hosted page,
-// this site never renders a card field), and offers the club's one real
-// channel (Instagram) for questions and deletions. It deliberately does NOT
+// this site never renders a card field), and offers the club's two real
+// channels (Instagram and the gym's postal address — the club has no
+// published email) for questions and deletions. It deliberately does NOT
 // invent legal apparatus — no ICO registration number, no named DPO, no
-// cookie-consent theatre for cookies the site does not set. If the club
-// formalises any of that, add it here; never ahead of it being true.
+// cookie-consent theatre for cookies the site does not set, no retention
+// periods the club hasn't actually adopted. If the club formalises any of
+// that, add it here; never ahead of it being true.
+//
+// Second QA pass (Oct 2026) added the controller section and the retention
+// section for UK GDPR. The QA's own caveat stands and is passed on to the
+// club: "I'm not a lawyer, so it's worth getting that checked" — this page
+// is honest, but it has not been reviewed by a solicitor.
 //
 // Styled like ManageBooking (light paper, one card column): both are quiet
 // "service" pages a member reaches with a task in mind, not marketing.
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { tenant } from '../lib/theme'
+import usePageTitle from '../lib/usePageTitle'
 
 const SECTIONS = [
+  {
+    // UK GDPR asks a privacy notice to NAME the controller and give a way to
+    // reach them (QA, Oct 2026: the page offered only an Instagram handle and
+    // named nobody). The club has no published email address — grep the repo:
+    // none exists — so this offers the two channels that are real: Instagram
+    // and the gym's postal address. If the club publishes an email, add it
+    // here first.
+    title: 'Who is responsible for your details',
+    body: [
+      'Made Running is the data controller — the club decides what is collected on this site and why. You can reach the club about anything on this page by messaging @made.running on Instagram, or by post: Made Running, 34 Knowsley Street, Manchester M8 8HQ, United Kingdom.',
+      'If you\u2019re not happy with how the club has handled your details, you also have the right to complain to the Information Commissioner\u2019s Office (ico.org.uk), the UK\u2019s data-protection regulator.',
+    ],
+  },
   {
     title: 'What we collect, and where',
     body: [
@@ -48,6 +69,18 @@ const SECTIONS = [
     ],
   },
   {
+    // Retention, stated as the PRACTICE rather than invented legal periods:
+    // the honest answer today is "for as long as you're part of the club,
+    // then on request". If the club adopts a formal retention schedule,
+    // replace this wording with the real periods — never ahead of them
+    // being true.
+    title: 'How long we keep things',
+    body: [
+      'Member details are kept for as long as you\u2019re part of the community, so coaches know who is coming and who to call. Ask to leave and they are deleted, not archived.',
+      'Booking records are kept while the booking is live and for a reasonable period afterwards so the club can answer payment questions and handle refunds. Coach applications are kept while they\u2019re being considered; tell us if you\u2019d like yours deleted sooner.',
+    ],
+  },
+  {
     title: 'Seeing, fixing or deleting your details',
     body: [
       'Your details are yours. Message the club on Instagram (@made.running) and we\u2019ll show you what we hold, correct it, or delete it — including removing you from the member list entirely. Class bookings can be cancelled any time from the manage-booking link on your confirmation.',
@@ -56,6 +89,7 @@ const SECTIONS = [
 ]
 
 export default function Privacy() {
+  usePageTitle('Privacy')
   return (
     <div className="pv">
       <style>{PV_CSS}</style>

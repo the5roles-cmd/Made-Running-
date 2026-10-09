@@ -1,0 +1,12 @@
+# Made Running — https://maderunning.co.uk
+# Everything public is crawlable. The three disallowed paths are not secret —
+# they are just useless in search results: /app is behind sign-in (crawlers
+# only ever see the login bounce), and /login and /reset-password are forms
+# with no content of their own.
+
+User-agent: *
+Disallow: /app
+Disallow: /login
+Disallow: /reset-password
+
+Sitemap: https://maderunning.co.uk/sitemap.xml

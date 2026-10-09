@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Made Running sitemap. Hand-maintained: the public surface is seven URLs
+     and changes only when a route is added, so a build-time generator would
+     be more machinery than content. Class pages (/c/:slug) join the list
+     when the class database goes live and the slugs become stable. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://maderunning.co.uk/</loc>
+  </url>
+  <url>
+    <loc>https://maderunning.co.uk/start</loc>
+  </url>
+  <url>
+    <loc>https://maderunning.co.uk/join</loc>
+  </url>
+  <url>
+    <loc>https://maderunning.co.uk/book</loc>
+  </url>
+  <url>
+    <loc>https://maderunning.co.uk/coaches</loc>
+  </url>
+  <url>
+    <loc>https://maderunning.co.uk/privacy</loc>
+  </url>
+  <url>
+    <loc>https://maderunning.co.uk/coach-application.html</loc>
+  </url>
+</urlset>

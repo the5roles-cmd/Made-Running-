@@ -11,23 +11,20 @@
     <meta property="og:title" content="Made Running — No One Gets Left Behind" />
     <meta property="og:description" content="A running community born in Manchester. 85k strong, five chapters, three countries. Whether it is your first mile or your fastest, there is a group here that moves at your pace." />
     <meta property="og:type" content="website" />
-    <!-- ── These pointed at sutekwellness.com, which answers 402 ──
-         sutekwellness.com returns 402 Payment Required on every path,
-         /og-image.jpg included. Both of these tags are read by a CRAWLER and
-         never by a browser that is already on the page, so an unreachable host
-         here does not degrade the preview — it deletes it. Every link to this
-         site pasted into WhatsApp, Facebook or iMessage was rendering with no
-         image and a canonical URL that goes nowhere, the landing page
-         included. The identical image on the address below answers 200.
+    <!-- ── Canonical host: maderunning.co.uk ──
+         History, because this host has moved twice: it began on
+         sutekwellness.com (which started answering 402 Payment Required on
+         every path, deleting the preview image from every pasted link), was
+         parked on the Vercel app domain as the fix, and now lives on the
+         club's own maderunning.co.uk — which is where every shared link and
+         search result should say the site lives (QA, Oct 2026: the preview
+         card was still crediting the Vercel domain). Both domains serve the
+         identical deployment, so this is purely about which NAME travels.
 
-         Put these back the moment sutekwellness.com is serving again, or pass
-         SITE_ORIGIN at build time — scripts/prerender-classes.mjs derives all
-         twelve class previews from og:url, so the two cannot drift.
-
-         The brand is unaffected: og:site_name below is the name a reader
-         actually sees in the preview, and that is still Made Running. -->
-    <meta property="og:url" content="https://made-running-platform.vercel.app" />
-    <meta property="og:image" content="https://made-running-platform.vercel.app/og-image.jpg?v=2" />
+         scripts/prerender-classes.mjs derives all twelve class previews from
+         og:url, so the class pages follow this tag automatically. -->
+    <meta property="og:url" content="https://maderunning.co.uk" />
+    <meta property="og:image" content="https://maderunning.co.uk/og-image.jpg?v=2" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:type" content="image/jpeg" />
@@ -39,9 +36,8 @@
          days and would otherwise keep serving the old pitch card. -->
     <meta name="twitter:image:alt" content="Made Running — no one gets left behind. Three club members in Manchester." />
     <!-- The page carries the club's own name and voice, and og:site_name is
-         what carries it into the preview. The host in og:url above is allowed
-         to differ from the brand — what it is NOT allowed to be is an address
-         that does not answer, which is why it changed. -->
+         what carries it into the preview. Since the move to maderunning.co.uk
+         the host and the brand finally agree. -->
     <meta property="og:site_name" content="Made Running" />
 
     <!-- Twitter card -->
@@ -52,7 +48,7 @@
          back to og:image when twitter:image is missing but NOT when it is
          present and unreachable, so leaving this one behind would have fixed
          the preview everywhere except on X. -->
-    <meta name="twitter:image" content="https://made-running-platform.vercel.app/og-image.jpg?v=2" />
+    <meta name="twitter:image" content="https://maderunning.co.uk/og-image.jpg?v=2" />
 
     <!-- Matches the title Landing.jsx sets at runtime. They were different,
          which meant a visible title flash on load and a crawler-visible name

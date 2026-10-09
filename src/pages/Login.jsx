@@ -6,6 +6,7 @@ import { supabase, supabaseConfigured, friendlyError } from '../lib/supabase'
 import { safeNext } from '../lib/authNext'
 import { REGISTRATION_OPEN } from '../lib/registration'
 import { tenant } from '../lib/theme'
+import usePageTitle from '../lib/usePageTitle'
 import BrandLogo from '../components/BrandLogo'
 import SetupNotice from '../components/SetupNotice'
 
@@ -33,6 +34,10 @@ const linkBtn = {
 }
 
 export default function Login() {
+  // "Sign in", not the mode-specific label: the tab title identifies the PAGE
+  // (five open tabs, QA Oct 2026), and the page is the same door whichever
+  // tab inside it is showing.
+  usePageTitle('Sign in')
   // Deliberately does NOT pull `orgs`. Reading it here captures the signed-out
   // value for the lifetime of the submit handler; use refreshOrgs()'s return
   // value instead, which is fetched after the session exists.
@@ -46,7 +51,16 @@ export default function Login() {
   // this cannot be pointed at another origin.
   const dest = safeNext(searchParams.get('next'))
 
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'forgot'
+  // 'signin' | 'signup' | 'forgot'. Seeded from ?mode=signup so doors whose
+  // audience is new — "Get started", "Join the Community" — open on the
+  // Create account tab instead of making a newcomer find it (QA, Oct 2026).
+  // Gated on REGISTRATION_OPEN exactly like the tab itself: a stale link
+  // carrying mode=signup after registration closes must not render a mode
+  // whose UI is gone. Lazy initialiser, so the param is read once at mount —
+  // tab switches after that belong to the person, not the URL.
+  const [mode, setMode] = useState(() =>
+    searchParams.get('mode') === 'signup' && REGISTRATION_OPEN ? 'signup' : 'signin',
+  )
   // Set once the reset email has been requested. Shown for ANY address,
   // including ones with no account — see requestPasswordReset in
   // AuthProvider for why that is deliberate rather than sloppy.

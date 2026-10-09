@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { loginHref } from '../lib/authNext'
+import { loginHref, signupHref } from '../lib/authNext'
 import { REGISTRATION_OPEN } from '../lib/registration'
+import { supabase, supabaseConfigured } from '../lib/supabase'
 import { InstagramMark } from '../components/BrandMarks'
 import BrandLogo from '../components/BrandLogo'
 import {
@@ -110,6 +111,20 @@ function prefersReducedMotion() {
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
   )
 }
+
+// Hero film source, decided ONCE at module load rather than reactively. The
+// original export was 5.1MB — more than half the homepage's entire first
+// load (QA, Oct 2026) — so it now ships as two encodes: 1280px/CRF30 (2.6MB)
+// for laptops and 720px/CRF30 (1.0MB) for phones. Module-level on purpose:
+// a <video> that swaps src on window resize restarts its download and
+// flashes black mid-view, which costs more than the bytes it saves. Someone
+// rotating a tablet keeps whichever film they started with.
+const HERO_SRC =
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(max-width: 800px)').matches
+    ? '/video/made-hero-720.mp4'
+    : '/video/made-hero-1280.mp4'
 
 function Reveal({ as: Tag = 'div', delay = 0, className = '', style, children }) {
   const ref = useRef(null)
@@ -258,7 +273,7 @@ const PROOF_CHIPS = [
   { label: 'Everyone welcome', icon: CheckCircle2 },
 ]
 
-// The five doors from /start, echoed on the hero as small glass cards so a
+// The four doors from /start, echoed on the hero as small glass cards so a
 // visitor can route themselves without leaving the film.
 //
 // Every one of them now goes through /login first, carrying its real
@@ -275,15 +290,18 @@ const PROOF_CHIPS = [
 // Computed once at module scope rather than inline in each card: the flag
 // cannot change at runtime, so re-deriving it per render would be noise, and
 // naming it makes any card that shares the promise visibly share it.
-const SIGNIN_META = REGISTRATION_OPEN ? 'Sign in or sign up' : 'Sign in required'
+const SIGNIN_META = REGISTRATION_OPEN ? 'Create your account' : 'Sign in required'
 
 const QUICK_PATHS = [
-  // A card cannot promise a sign-up the login page does not offer, so these
-  // two read "Sign in or sign up" only while REGISTRATION_OPEN is true. They
-  // fall back to "Sign in required" when it is false — same door, honest
-  // label. See src/lib/registration.js.
-  { dest: '/join', label: 'I am a Runner', meta: SIGNIN_META },
-  { dest: '/join', key: 'community', label: 'Join the Community', meta: 'Everyone welcome' },
+  // ONE join door, not two. "I am a Runner" and "Join the Community" both
+  // pointed at /join, and a visitor who read both labels had to guess what
+  // the difference was — there wasn't one (QA, Oct 2026). Merged: the label
+  // keeps the club's phrase, the meta names both audiences. `signup: true`
+  // routes it through signupHref so a newcomer lands on the Create account
+  // tab, not the Sign in tab; a returning member with a live session never
+  // sees either. The meta tracks REGISTRATION_OPEN like every promise here —
+  // see src/lib/registration.js.
+  { dest: '/join', key: 'join', signup: true, label: 'Join the Community', meta: SIGNIN_META },
   // The Shop card is back, but DEAD — the club asked for the button to be
   // visible again while the shop stays disabled (Oct 2026). `disabled: true`
   // renders a <span>, never a link: there is no /shop route to point at, so
@@ -389,6 +407,18 @@ function AmbientFilm({ src, poster, alt, className }) {
 function FilmShare({ src, title }) {
   const [busy, setBusy] = useState(false)
 
+  // The label must describe what the press will actually DO on this device
+  // (QA, Oct 2026: on desktop all four "Share on Instagram" buttons just
+  // opened the club's profile — a share that doesn't share). Where the Web
+  // Share API exists (phones — the audience this control was built for) the
+  // button really does hand the film to the share sheet, so it says "Share
+  // this film". Where it doesn't (most desktops), the pretence is dropped:
+  // it renders as a plain link that says what it is — Follow on Instagram.
+  // navigator.share is a stable capability of the browser, not of the
+  // moment, so reading it at render (not in state) is safe.
+  const canShare =
+    typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+
   async function share() {
     if (busy) return
     setBusy(true)
@@ -423,11 +453,127 @@ function FilmShare({ src, title }) {
     }
   }
 
+  if (!canShare) {
+    return (
+      <a
+        className="tp-ugc__share"
+        href={SOCIALS.instagram}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <InstagramMark size={13} />
+        <span>Follow on Instagram</span>
+      </a>
+    )
+  }
+
   return (
     <button type="button" className="tp-ugc__share" onClick={share} disabled={busy}>
       <InstagramMark size={13} />
-      <span>{busy ? 'Opening\u2026' : 'Share on Instagram'}</span>
+      <span>{busy ? 'Opening\u2026' : 'Share this film'}</span>
     </button>
+  )
+}
+
+// ── "Notify me when the kit drops" (QA, Oct 2026) ────────────────────
+// The shop band used to end in a "Coming soon" pill that looked like a
+// button and did nothing — interest arrived and evaporated. This form
+// catches it. It follows the same ONE RULE as the booking form: no screen
+// may claim what the database cannot confirm. The email is saved by the
+// kit_notify RPC (supabase-kit-interest.sql — SECURITY DEFINER insert into
+// a table no anon key can read back). Until the club runs that SQL the RPC
+// does not exist, PostgREST answers PGRST202, and the form says plainly
+// that nothing was saved and offers the channel that does work. It never
+// pretends.
+function KitNotify() {
+  const [email, setEmail] = useState('')
+  // idle → busy → done, with three honest failure exits:
+  //   invalid — the address doesn't look like an address
+  //   off     — the list isn't provisioned yet (RPC missing / no network)
+  //   error   — the database answered, but with a real error worth retrying
+  const [phase, setPhase] = useState('idle')
+
+  async function submit(e) {
+    e.preventDefault()
+    if (phase === 'busy') return
+    const v = email.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+      setPhase('invalid')
+      return
+    }
+    if (!supabaseConfigured) {
+      setPhase('off')
+      return
+    }
+    setPhase('busy')
+    try {
+      const { error } = await supabase.rpc('kit_notify', { p_email: v })
+      if (error) {
+        // PGRST202 = the function does not exist — the SQL has not been run.
+        // No code at all = the request never reached PostgREST. Both mean
+        // "the list is not switched on", not "you did something wrong".
+        setPhase(error.code === 'PGRST202' || !error.code ? 'off' : 'error')
+        return
+      }
+      setPhase('done')
+    } catch {
+      setPhase('off')
+    }
+  }
+
+  if (phase === 'done') {
+    return (
+      <p className="tp-shop__msg tp-shop__msg--ok" role="status">
+        You&rsquo;re on the list &mdash; we&rsquo;ll email you the moment the
+        kit drops. Nothing else, no newsletter.
+      </p>
+    )
+  }
+
+  return (
+    <form className="tp-shop__form" onSubmit={submit} noValidate>
+      <label className="tp-sr" htmlFor="kit-email">
+        Email address for the kit-drop list
+      </label>
+      <input
+        id="kit-email"
+        className="tp-shop__email"
+        type="email"
+        autoComplete="email"
+        placeholder="you@example.com"
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value)
+          if (phase === 'invalid') setPhase('idle')
+        }}
+        disabled={phase === 'busy'}
+      />
+      <button type="submit" className="tp-shop__notify" disabled={phase === 'busy'}>
+        {phase === 'busy' ? 'Saving\u2026' : 'Notify me'}
+      </button>
+      {phase === 'invalid' && (
+        <p className="tp-shop__msg" role="alert">
+          That doesn&rsquo;t look like an email address &mdash; check it and
+          try again.
+        </p>
+      )}
+      {phase === 'error' && (
+        <p className="tp-shop__msg" role="alert">
+          That didn&rsquo;t save &mdash; nothing is on the list yet. Please
+          try again in a minute.
+        </p>
+      )}
+      {phase === 'off' && (
+        <p className="tp-shop__msg" role="alert">
+          The notify list isn&rsquo;t switched on just yet, so nothing was
+          saved. Follow{' '}
+          <a href={SOCIALS.instagram} target="_blank" rel="noopener noreferrer">
+            @made.running
+          </a>{' '}
+          and you&rsquo;ll see the drop the moment it lands.
+        </p>
+      )}
+    </form>
   )
 }
 
@@ -742,6 +888,24 @@ export default function Landing() {
           height: auto;             /* width/height attrs keep CLS at zero */
           filter: drop-shadow(0 2px 12px rgba(0,0,0,0.4));
         }
+        /* Visually-hidden text. The headline ships as the club's slogan
+           lockup (an image), so the REAL words live in this clipped span —
+           a text node, not an alt attribute, because search engines and
+           link-preview scrapers weight an <h1>'s text far more than an
+           image's alt (QA, Oct 2026: "the main headline is a picture").
+           Also used for form labels whose meaning is visually obvious
+           (the kit-notify email field) but must exist for screen readers. */
+        .tp-sr {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
         /* Quick paths — the /start doors as small glass cards on the film.
            Spans both hero columns as the grid's second row. */
         .tp-hero__quick {
@@ -750,7 +914,8 @@ export default function Landing() {
         }
         .tp-hero__quick-grid {
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          /* Four doors since the runner/community merge (QA, Oct 2026). */
+          grid-template-columns: repeat(4, 1fr);
           gap: 10px;
         }
         .tp-qcard {
@@ -818,9 +983,8 @@ export default function Landing() {
           color: rgba(255,255,255,0.72);
         }
         @media (max-width: 1000px) {
+          /* Four doors fold to a clean 2×2 — no spanning odd one out. */
           .tp-hero__quick-grid { grid-template-columns: repeat(2, 1fr); }
-          /* Five on two columns: the odd one spans, echoing /start */
-          .tp-hero__quick-grid > :last-child { grid-column: 1 / -1; }
         }
         @media (prefers-reduced-motion: reduce) {
           .tp-qcard { transition: none; }
@@ -1152,21 +1316,85 @@ export default function Landing() {
         .tp-shop__h2 {
           color: #fff;
         }
-        /* The shop is DISABLED, so this is a status pill, not a button:
-           hairline outline, no fill, no hover — nothing that invites a
-           click, because there is nowhere to go. (The solid-white
-           .tp-shop__now button returns with the shop.) */
+        /* "Coming soon" is a quiet status LABEL now, not a pill that looks
+           like a button and does nothing (QA, Oct 2026) — the eyebrow voice,
+           same as every other section tag on the page. The action in this
+           band is the notify form below it. */
         .tp-shop__soon {
-          display: inline-flex;
-          align-items: center;
-          padding: 10px 18px;
-          border-radius: 999px;
-          border: 1px solid rgba(255, 255, 255, 0.4);
+          display: inline-block;
           font-size: 0.72rem;
           font-weight: 700;
           letter-spacing: 0.14em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.85);
+          color: var(--accent-ink);
+          margin-bottom: 14px;
+        }
+        /* ── The kit-drop notify form (QA, Oct 2026) ──
+           48px controls: this is a conversion control, a notch taller than
+           the 44px touch floor. The input keeps flex-basis 220px so input +
+           button sit on one line on desktop and wrap to two clean rows on a
+           phone — never a squeezed sliver beside a wide button. */
+        .tp-shop__why {
+          font-size: 0.9rem;
+          line-height: 1.6;
+          color: rgba(255,255,255,0.66);
+          margin: 0 0 16px;
+          max-width: 44ch;
+        }
+        .tp-shop__form {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          width: 100%;
+          max-width: 440px;
+        }
+        .tp-shop__email {
+          flex: 1 1 220px;
+          min-height: 48px;
+          padding: 0 16px;
+          border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.28);
+          background: rgba(255,255,255,0.06);
+          color: #fff;
+          font: inherit;
+          font-size: 0.9rem;
+        }
+        .tp-shop__email::placeholder { color: rgba(255,255,255,0.45); }
+        .tp-shop__email:focus-visible {
+          outline: 2px solid #fff;
+          outline-offset: 2px;
+          border-color: #fff;
+        }
+        .tp-shop__notify {
+          min-height: 48px;
+          padding: 0 22px;
+          border-radius: 8px;
+          border: 1px solid #fff;
+          background: #fff;
+          color: #111;
+          font: inherit;
+          font-size: 0.82rem;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: filter 200ms;
+        }
+        .tp-shop__notify:hover { filter: brightness(0.92); }
+        .tp-shop__notify:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+        .tp-shop__notify:disabled { opacity: 0.6; cursor: default; }
+        .tp-shop__msg {
+          flex-basis: 100%;
+          margin: 4px 0 0;
+          font-size: 0.88rem;
+          line-height: 1.55;
+          color: rgba(255,255,255,0.75);
+          max-width: 44ch;
+        }
+        .tp-shop__msg--ok { color: var(--ok); }
+        .tp-shop__msg a { color: #fff; font-weight: 600; }
+        @media (prefers-reduced-motion: reduce) {
+          .tp-shop__notify { transition: none; }
         }
         @media (max-width: 860px) {
           .tp-shop { grid-template-columns: 1fr; }
@@ -1373,9 +1601,14 @@ export default function Landing() {
           font-size: 0.72rem;
           font-weight: 700;
         }
+        /* Footer type: sized and brightened after QA (Oct 2026) found it
+           "tiny and low-contrast". The address is the club's only published
+           contact point, so it gets the strongest ink; the tagline and
+           copyright keep a step less so the hierarchy survives, but every
+           rung now clears WCAG AA (≥4.5:1) against the #141414 footer. */
         .tp-footer__tagline {
-          font-size: 0.72rem;
-          color: rgba(255,255,255,0.35);
+          font-size: 0.8rem;
+          color: rgba(255,255,255,0.6);
           font-weight: 400;
         }
         /* <address> is the correct element for the club's contact details, but
@@ -1383,13 +1616,13 @@ export default function Landing() {
            of the footer rather than looking like a quotation. */
         .tp-footer__addr {
           font-style: normal;
-          font-size: 0.72rem;
-          color: rgba(255,255,255,0.45);
-          line-height: 1.5;
+          font-size: 0.8rem;
+          color: rgba(255,255,255,0.65);
+          line-height: 1.6;
         }
         .tp-footer__copy {
-          font-size: 0.68rem;
-          color: rgba(255,255,255,0.25);
+          font-size: 0.78rem;
+          color: rgba(255,255,255,0.55);
         }
         /* The club's Instagram. Sized to 44px so it meets the touch-target
            minimum on a phone, where the footer is a single stacked column and
@@ -1513,9 +1746,16 @@ export default function Landing() {
           letter-spacing: 0.12em;
           text-transform: uppercase;
           cursor: pointer;
+          /* The control is an <a> on desktop now (Follow on Instagram), so
+             the global a:hover underline has to be held off here too. */
+          text-decoration: none;
           transition: border-color 200ms ease-out, color 200ms ease-out;
         }
-        .tp-ugc__share:hover { border-color: rgba(255, 255, 255, 0.55); color: #fff; }
+        .tp-ugc__share:hover {
+          border-color: rgba(255, 255, 255, 0.55);
+          color: #fff;
+          text-decoration: none;
+        }
         .tp-ugc__share:disabled { opacity: 0.6; cursor: default; }
         @media (prefers-reduced-motion: reduce) {
           .tp-ugc__share { transition: none; }
@@ -1544,8 +1784,11 @@ export default function Landing() {
               opened a menu of doors instead was the odd one out — and the
               chooser still advertised the old ungated destinations. Both land
               on /login; the two tabs there are exactly the two intents. */}
+          {/* Two doors, two tabs: "Log in" is for people who HAVE an account,
+              so it opens on Sign in; "Get started" is by definition for people
+              who don't, so it opens on Create account (QA, Oct 2026). */}
           <Link to={loginHref('/app')} className="tp-nav__login">Log in</Link>
-          <Link to={loginHref('/join')} className="tp-nav__cta">
+          <Link to={signupHref('/join')} className="tp-nav__cta">
             Get started <ArrowRight size={13} />
           </Link>
         </nav>
@@ -1579,7 +1822,7 @@ export default function Landing() {
         <video
           ref={heroFilmRef}
           className="tp-hero__film"
-          src="/video/made-hero.mp4"
+          src={HERO_SRC}
           autoPlay={!prefersReducedMotion()}
           muted
           loop
@@ -1592,13 +1835,19 @@ export default function Landing() {
         <Reveal className="tp-hero__text" as="div">
           <div className="tp-hero__eyebrow">UK &middot; UAE &middot; US</div>
           {/* The club's own slogan lockup (from Slogan-Without-Logo.pdf),
-              keyed to white-on-transparent. Wrapped in the h1 so the page
-              keeps a real headline for screen readers and SEO. */}
+              keyed to white-on-transparent. The words themselves live in a
+              visually-hidden span so the h1 contains real TEXT — alt on the
+              image alone left the page's main headline invisible to anything
+              that weights h1 text over image alts (QA, Oct 2026). The image
+              is then pure decoration: alt="" + aria-hidden so screen readers
+              hear the slogan exactly once. */}
           <h1 className="tp-hero__title">
+            <span className="tp-sr">No One Gets Left Behind</span>
             <img
               className="tp-hero__slogan"
               src="/img/slogan-white.png"
-              alt="No One Gets Left Behind"
+              alt=""
+              aria-hidden="true"
               width={1600}
               height={232}
             />
@@ -1609,7 +1858,10 @@ export default function Landing() {
             {/* Through the same gate as the quick cards below it. Leaving the
                 hero's biggest button as the one ungated way in would have made
                 the sign-in step look optional. */}
-            <Link to={loginHref('/join')} className="tp-btn-primary">
+            {/* signupHref, not loginHref: "Join" is a newcomer's verb, so the
+                door opens on Create account (QA, Oct 2026). Members with a
+                session skip the form entirely either way. */}
+            <Link to={signupHref('/join')} className="tp-btn-primary">
               Join the Community <ArrowRight size={14} />
             </Link>
           </div>
@@ -1627,7 +1879,7 @@ export default function Landing() {
           />
         </Reveal>
 
-        {/* The five doors, small. Full-width row under both hero columns. */}
+        {/* The four doors, small. Full-width row under both hero columns. */}
         <Reveal className="tp-hero__quick" as="div" delay={180}>
           <nav className="tp-hero__quick-grid" aria-label="Choose your path">
             {/* Two branches, because two different kinds of destination.
@@ -1643,11 +1895,12 @@ export default function Landing() {
                   <span className="tp-qcard__meta">{p.meta}</span>
                 </>
               )
-              // Four kinds of destination, not two:
+              // Five kinds of destination, not two:
               //   disabled → no destination at all (the dead Shop card)
               //   external → a real file the host serves (coach form)
               //   public   → an in-app route with no sign-in gate (/book)
-              //   default  → an in-app route behind /login
+              //   signup   → behind /login, opened on Create account
+              //   default  → behind /login, opened on Sign in
               if (p.disabled) {
                 return (
                   <span
@@ -1669,7 +1922,13 @@ export default function Landing() {
               return (
                 <Link
                   key={p.key || p.dest}
-                  to={p.public ? p.dest : loginHref(p.dest)}
+                  to={
+                    p.public
+                      ? p.dest
+                      : p.signup
+                      ? signupHref(p.dest)
+                      : loginHref(p.dest)
+                  }
                   className="tp-qcard"
                 >
                   {inner}
@@ -1789,7 +2048,7 @@ export default function Landing() {
             className="tp-shop__img"
             src="/img/shop-hoodie-1290.jpg"
             srcSet="/img/shop-hoodie-900.jpg 900w, /img/shop-hoodie-1290.jpg 1290w"
-            sizes="(max-width: 860px) 100vw, 45vw"
+            sizes="(max-width: 860px) 100vw, 50vw"
             loading="lazy"
             decoding="async"
             alt="A Made Running hoodie printed with No One Gets Left Behind, in front of a Manchester tram."
@@ -1798,18 +2057,23 @@ export default function Landing() {
         <Reveal className="tp-shop__copy" as="div">
           {/* The section name is the headline now, so the purple "SHOP"
               eyebrow that used to sit above it would just repeat the word. */}
+          <span className="tp-shop__soon">Coming soon</span>
           <h2 className="tp-h2 tp-shop__h2">Shop</h2>
           <p className="tp-lede tp-shop__lede">
             Vests, tees and layers in the club&rsquo;s own colours. Every piece
             carries the line that started it &mdash; and you will spot it on
             every start line from Manchester to Dubai.
           </p>
-          {/* The shop is disabled at the club's instruction, so this is a
-              status chip, not a link — a dead <Link> that lands back on the
-              homepage would read as broken. The band itself stays: the kit
-              is real and the photo is the club's own vest. When the shop
-              reopens, this swaps back to the "Shop Now" <Link>. */}
-          <span className="tp-shop__soon">Coming soon</span>
+          {/* The shop itself is still disabled at the club's instruction, but
+              the interest no longer evaporates (QA, Oct 2026): the dead
+              "Coming soon" pill became the status label above the headline,
+              and the band's action is this notify-me form. When the shop
+              reopens, the "Shop Now" <Link> joins (or replaces) it. */}
+          <p className="tp-shop__why">
+            Want first dibs? Leave your email and we&rsquo;ll send one message
+            when the first drop lands &mdash; that&rsquo;s it.
+          </p>
+          <KitNotify />
         </Reveal>
       </section>
 
@@ -1888,13 +2152,20 @@ export default function Landing() {
           {/* Swapped from the creed-vest photo at the club's instruction
               (Oct 2026): Hermen pacing a Manchester Marathon runner to the
               line, arm in arm — the creed as an action instead of a print.
-              Native width is 1205px, so no variant claims more. */}
+              Native width is 1205px, so no variant claims more.
+
+              sizes says 34vw, not the column's literal ~31vw, on purpose: the
+              parallax pre-zooms these frames by scale(1.06–1.12) (overscan
+              budget, see the ref effect), so the photo must carry ~10% more
+              pixels than the box it sits in or it renders soft. QA (Oct 2026)
+              caught exactly that — "shown larger than the file served". Same
+              correction on the support and shop photos below. */}
           <img
             ref={creedVestRef}
             className="tp-creed__img tp-creed__img--creed"
             src="/img/hermen-gail-1205.jpg"
             srcSet="/img/hermen-gail-900.jpg 900w, /img/hermen-gail-1205.jpg 1205w"
-            sizes="(max-width: 860px) 100vw, 30vw"
+            sizes="(max-width: 860px) 100vw, 34vw"
             loading="lazy"
             decoding="async"
             alt="A Made Running coach walking arm in arm with a Manchester Marathon runner, both checking her watch."
@@ -1933,7 +2204,7 @@ export default function Landing() {
             className="tp-creed__img tp-creed__img--support"
             src="/img/support-1600.jpg"
             srcSet="/img/support-900.jpg 726w, /img/support-1600.jpg 1290w"
-            sizes="30vw"
+            sizes="34vw"
             loading="lazy"
             decoding="async"
             alt="One Made Running member supporting another after a session."
@@ -1952,7 +2223,7 @@ export default function Landing() {
             Whether it is your first mile or your fastest, there is a group here
             that moves at your pace. Turn up, say hello, run.
           </p>
-          <Link to={loginHref('/join')} className="tp-footer-cta__btn">
+          <Link to={signupHref('/join')} className="tp-footer-cta__btn">
             Join the Community <ArrowRight size={14} />
           </Link>
         </Reveal>

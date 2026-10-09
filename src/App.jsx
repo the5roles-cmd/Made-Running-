@@ -65,6 +65,12 @@ const Coaches = lazy(() => import('./pages/Coaches'))
 // reached from footer and form links, never part of the pitch-page paint.
 const Privacy = lazy(() => import('./pages/Privacy'))
 
+// The 404 page (QA, Oct 2026: unmatched URLs silently loaded the homepage,
+// which hid typos instead of naming them). Lazy because nobody should ever
+// see it on a working journey — its chunk only downloads when a URL is
+// already wrong.
+const NotFound = lazy(() => import('./pages/NotFound'))
+
 // ── The shop is DISABLED at the club's instruction (Oct 2026) ────────
 // Both doors are closed: the public /shop route and the member /app/shop
 // route are gone, along with every link that pointed at them (Landing's
@@ -267,7 +273,17 @@ export default function App() {
         <Route path="*" element={<Navigate to="/app" replace />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* A real 404 instead of a silent redirect home (QA, Oct 2026). The
+          /app catch-all above still wins for signed-in members on dead app
+          URLs — this one only sees public paths that match nothing. */}
+      <Route
+        path="*"
+        element={
+          <Suspense fallback={<PublicBoot />}>
+            <NotFound />
+          </Suspense>
+        }
+      />
     </Routes>
   )
 }

@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { tenant } from '../lib/theme'
+import usePageTitle from '../lib/usePageTitle'
 import BrandLogo from '../components/BrandLogo'
 
 // Parse and sanitise the ?ref= query param from the invite URL.
@@ -37,6 +38,7 @@ function phoneLooksValid(value) {
 }
 
 export default function JoinRunner() {
+  usePageTitle('Join the community')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')

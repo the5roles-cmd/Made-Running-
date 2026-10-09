@@ -17,9 +17,11 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { tenant } from '../lib/theme'
+import usePageTitle from '../lib/usePageTitle'
 import BrandLogo from '../components/BrandLogo'
 
 export default function ResetPassword() {
+  usePageTitle('Reset password')
   const { session, loading, updatePassword, supabaseConfigured } = useAuth()
   const navigate = useNavigate()
 

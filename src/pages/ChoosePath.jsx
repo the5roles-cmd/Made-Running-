@@ -14,9 +14,10 @@
 // but differentiate by fill/weight instead of hue, to stay on-brand.
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { loginHref } from '../lib/authNext'
+import { signupHref } from '../lib/authNext'
 import { REGISTRATION_OPEN } from '../lib/registration'
 import { tenant } from '../lib/theme'
+import usePageTitle from '../lib/usePageTitle'
 import BrandLogo from '../components/BrandLogo'
 
 // The signature move: a hand-drawn underline under each path label. Solid
@@ -90,24 +91,22 @@ function AnimatedTitle({ text }) {
 //   · book a class → public timetable, no gate
 // The squiggle weights follow the meaning, not the old layout: solid for
 // open public doors, dashed hairline for the gated ones.
-const SIGNIN_META = REGISTRATION_OPEN ? 'Sign in or sign up' : 'Sign in required'
+const SIGNIN_META = REGISTRATION_OPEN ? 'Create your account' : 'Sign in required'
 
 const PATHS = [
+  // ONE join door, matching the homepage (QA, Oct 2026: "I am a Runner" and
+  // "Join the Community" went to the same place, so two cards were one
+  // choice wearing two labels). Runner or supporter, the destination is
+  // /join via the Create account tab — signupHref, because anyone picking
+  // this door is new by definition; a signed-in member passes through
+  // without seeing a form.
   {
-    to: loginHref('/join'),
-    key: 'runner',
-    label: 'I am a Runner',
-    variant: 'hairline',
-    blurb: 'Register for a session and get on the start line.',
-    meta: SIGNIN_META,
-  },
-  {
-    to: loginHref('/join'),
-    key: 'community',
+    to: signupHref('/join'),
+    key: 'join',
     label: 'Join the Community',
     variant: 'hairline',
-    blurb: 'New here? Join the crew — no one gets left behind.',
-    meta: 'Everyone welcome',
+    blurb: 'Runner or supporter — get on the start line. No one gets left behind.',
+    meta: SIGNIN_META,
   },
   {
     // A real file in public/, served by the host — not a React Router
@@ -175,6 +174,7 @@ function readLastPath() {
 }
 
 export default function ChoosePath() {
+  usePageTitle('Choose your path')
   // Read once at mount: this must not change under the user mid-screen, or the
   // marker would visibly move as they click.
   const [lastPath] = useState(readLastPath)
@@ -335,9 +335,9 @@ export default function ChoosePath() {
           grid-template-columns: 1fr 1fr;
           gap: var(--s4);
         }
-        /* Five doors on a two-column grid: the odd one out spans the full
-           row rather than leaving a hole beside it. */
-        .cp-grid > :last-child { grid-column: 1 / -1; }
+        /* Four doors since the runner/community merge (QA, Oct 2026) — a
+           clean 2×2, so the old "odd one spans" rule is gone with the
+           fifth card. */
 
         .cp-option {
           display: block;

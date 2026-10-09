@@ -44,3 +44,13 @@ export function safeNext(raw, fallback = FALLBACK) {
 export function loginHref(dest) {
   return `/login?next=${encodeURIComponent(dest)}`
 }
+
+// Same door, opened on the Create account tab. For buttons whose audience is
+// by definition NEW — "Get started", "Join the Community" — landing them on
+// the Sign in tab made every newcomer hunt for the Create account toggle
+// themselves (QA, Oct 2026). The mode is a HINT, not an instruction: Login
+// only honours it while REGISTRATION_OPEN is true, and a visitor with a live
+// session still passes straight through to `dest` without seeing any tab.
+export function signupHref(dest) {
+  return `/login?next=${encodeURIComponent(dest)}&mode=signup`
+}
