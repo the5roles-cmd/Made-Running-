@@ -137,10 +137,16 @@ export default function ManageBooking() {
           <div className="mb__card">
             <AlertTriangle size={30} className="mb__icon" aria-hidden="true" />
             <h1 className="mb__title">We can&rsquo;t check that right now</h1>
+            {/* This used to open with "Your booking is safe" — a claim this
+                page is in no position to make, since the one thing it knows
+                for certain is that it could NOT look the booking up. Opening
+                /booking/anything got the same reassurance (QA, Oct 2026).
+                Now it says only what it knows: the lookup failed. */}
             <p className="mb__body">
-              Your booking is safe — we just couldn&rsquo;t reach the system to
-              show it to you. Please try this link again shortly, or message the
-              club and they will cancel it for you.
+              We couldn&rsquo;t reach the booking system to look this link up,
+              so we can&rsquo;t show you anything just now. Please try again
+              shortly — or message the club on Instagram (@made.running) and
+              they&rsquo;ll check it for you.
             </p>
             <Link to="/book" className="mb__btn mb__btn--ghost">Back to the timetable</Link>
           </div>

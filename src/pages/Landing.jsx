@@ -1989,6 +1989,11 @@ export default function Landing() {
         </a>
         <span className="tp-footer__copy">
           &copy; {new Date().getFullYear()} Made Running &mdash; &ldquo;No One Gets Left Behind&rdquo;
+          {/* The privacy notice (QA, Oct 2026). Styled by the same __copy
+              wrapper — a quiet legal link belongs at copyright weight, not
+              nav weight. */}
+          {' · '}
+          <Link to="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
         </span>
       </footer>
     </div>

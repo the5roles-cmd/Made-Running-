@@ -659,8 +659,10 @@ body {
            JSON must not assume the array exists.
 
            Not to be confused with `#doneRef` on the success panel below —
-           that is the applicant's reference NUMBER and is still very much in
-           use. -->
+           that is the slot for an applicant reference NUMBER. It renders
+           empty today: the browser-minted reference was deleted with the
+           demo fallback (QA, Oct 2026) because the server had never heard
+           of it. The slot stays for the day the real endpoint returns one. -->
 
       <div class="field">
         <label class="label" for="anythingElse">Anything else?<span class="opt">optional</span></label>
@@ -686,7 +688,12 @@ body {
 
       <div class="field">
         <div class="choices">
-          <label class="choice"><input type="checkbox" id="consentData" name="consentData" /><span>I consent to Made Running storing my data for recruitment purposes.</span></label>
+          <!-- The privacy link opens in a new tab: this is the one link a
+               person taps MID-form, and a same-tab navigation would cost
+               them everything typed above it. /privacy is an SPA route —
+               vercel.json rewrites everything outside /api/ to index.html,
+               so it resolves fine from this static page. -->
+          <label class="choice"><input type="checkbox" id="consentData" name="consentData" /><span>I consent to Made Running storing my data for recruitment purposes (<a href="/privacy" target="_blank" rel="noopener noreferrer">how we look after your details</a>).</span></label>
         </div>
         <span class="err" id="err-consentData" aria-live="polite"></span>
       </div>
@@ -960,17 +967,27 @@ body {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Server responded ' + res.status);
-      succeed(payload);
+      succeed();
     } catch (netErr) {
-      // DEMO FALLBACK. Until /api/coach-applications exists this always runs.
-      // It confirms anyway so the journey can be demonstrated end to end, and
-      // logs the payload as proof the packaging worked.
-      // TODO(CRM): DELETE this fallback the day the endpoint goes live, or a
-      // genuine outage will be silently swallowed and applications will be
-      // lost while everyone sees a success screen.
-      console.warn('[coach-application] POST failed — endpoint not wired yet.', netErr);
-      console.info('[coach-application] payload that would have been sent:', payload);
-      succeed(payload);
+      // The demo fallback that used to live here confirmed ANYWAY — an
+      // applicant saw "Application received" plus a reference number while
+      // their application went precisely nowhere. It was deleted (QA, Oct
+      // 2026): a coach the club never replies to, because the club never
+      // knew they applied, is the most expensive kind of lost application.
+      //
+      // Until /api/coach-applications exists this branch always runs, and
+      // that is the correct behaviour: the truth is that the form cannot be
+      // received yet, so the page says so and offers the one channel that
+      // definitely works today.
+      console.warn('[coach-application] POST failed.', netErr);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Send application';
+      showFormError(
+        'We could not send your application — nothing has been received at ' +
+        'our end. Please try again in a few minutes, or message the club on ' +
+        'Instagram (@made.running) and we will take your details there. ' +
+        'Nothing you typed has been lost.'
+      );
     }
   });
 
@@ -986,12 +1003,14 @@ body {
     summary.focus();
   }
 
-  function succeed(payload) {
+  // Only ever called after a 2xx from the server. The reference number that
+  // used to be minted here (MR-<year>-<random>) went with the demo fallback:
+  // it was generated in the browser, so the server had never heard of it —
+  // an applicant quoting it to the club would have drawn a blank. If the
+  // real endpoint returns a reference one day, display THAT.
+  function succeed() {
     form.hidden = true;
     doneEl.hidden = false;
-    var ref = 'MR-' + new Date().getFullYear() + '-' +
-      Math.random().toString(36).slice(2, 7).toUpperCase();
-    $('doneRef').textContent = 'Your reference: ' + ref;
     doneEl.focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }

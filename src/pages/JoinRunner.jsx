@@ -22,6 +22,20 @@ function parseRefCode() {
   return sanitised || null
 }
 
+// Shape-check for an OPTIONAL phone field. "abc" was accepted and stored as
+// a phone number (QA, Oct 2026) — a coach trying to ring that member on race
+// morning gets nothing. Deliberately locale-agnostic: this club runs in three
+// countries, so "looks like a UK mobile" would reject real members. Strip the
+// characters people legitimately type (spaces, dots, dashes, brackets), then
+// require 7–15 digits with an optional +: the E.164 length envelope. Empty is
+// fine — the field is optional and a fake number is worse than none.
+function phoneLooksValid(value) {
+  const v = value.trim()
+  if (!v) return true
+  const bare = v.replace(/[\s().-]/g, '')
+  return /^\+?\d{7,15}$/.test(bare)
+}
+
 export default function JoinRunner() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -49,6 +63,16 @@ export default function JoinRunner() {
     }
     if (!waiverAccepted) {
       setErrorMsg('Please confirm the waiver below to register.')
+      return
+    }
+    if (!phoneLooksValid(phone)) {
+      setErrorMsg('That phone number doesn\u2019t look right — digits only, e.g. 0161 123 4567. Or leave it blank.')
+      return
+    }
+    if (!phoneLooksValid(emergencyPhone)) {
+      // Checked separately so the message can say WHICH field: on a phone
+      // screen the two inputs are a full scroll apart.
+      setErrorMsg('The emergency contact phone number doesn\u2019t look right — digits only, or leave it blank.')
       return
     }
 
@@ -192,8 +216,22 @@ export default function JoinRunner() {
               You&rsquo;re in.
             </div>
             <p className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
-              Thanks, {fullName.trim().split(' ')[0]} — we&rsquo;ve got your details. Keep an eye on our
-              Instagram and WhatsApp for the next session near you. No one gets left behind.
+              {/* Instagram is linked because it is the one channel with a real
+                  URL in this codebase. The old copy also name-dropped WhatsApp
+                  with nothing to tap (QA, Oct 2026) — mentioning a channel we
+                  cannot link is a promise with no door. When the club supplies
+                  a real group-invite URL, add it HERE first. */}
+              Thanks, {fullName.trim().split(' ')[0]} — we&rsquo;ve got your details. Follow{' '}
+              <a
+                href="https://www.instagram.com/made.running/"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--accent-ink)', fontWeight: 600 }}
+              >
+                @made.running on Instagram
+              </a>{' '}
+              for the next session near you — session times and group-chat invites are
+              posted there. No one gets left behind.
             </p>
           </div>
         ) : (
@@ -324,7 +362,18 @@ export default function JoinRunner() {
                 />
                 <span className="muted">
                   I confirm I&rsquo;m taking part at my own risk and I&rsquo;m happy for {tenant.name} to
-                  hold my details above for the purpose of running sessions and check-ins.
+                  hold my details above for the purpose of running sessions and check-ins.{' '}
+                  {/* target=_blank so a half-completed form is not lost to a
+                      same-tab navigation — this is the one link on the page
+                      someone taps MID-form. */}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--accent-ink)' }}
+                  >
+                    How we look after your details
+                  </a>
                 </span>
               </label>
 

@@ -61,6 +61,10 @@ const ClassPage = lazy(() => import('./pages/ClassPage'))
 // boundary for the same third one.
 const Coaches = lazy(() => import('./pages/Coaches'))
 
+// The privacy notice (QA, Oct 2026). Public and lazy like ClassPage/Coaches:
+// reached from footer and form links, never part of the pitch-page paint.
+const Privacy = lazy(() => import('./pages/Privacy'))
+
 // ── The shop is DISABLED at the club's instruction (Oct 2026) ────────
 // Both doors are closed: the public /shop route and the member /app/shop
 // route are gone, along with every link that pointed at them (Landing's
@@ -98,7 +102,10 @@ export default function App() {
   return (
     <Routes>
       {/* Public. /start is the pre-login gate that routes people to the
-          correct door: runners to /join (no auth), coaches to /login. */}
+          correct door. Same rules as the homepage's quick cards (the two
+          pages used to contradict each other — QA, Oct 2026): runners and
+          community through /login?next=/join, prospective coaches straight
+          to the public application form, the timetable ungated. */}
       <Route path="/" element={<Landing />} />
       <Route path="/start" element={<ChoosePath />} />
       <Route path="/login" element={<Login />} />
@@ -146,6 +153,18 @@ export default function App() {
         element={
           <Suspense fallback={<PublicBoot />}>
             <Coaches />
+          </Suspense>
+        }
+      />
+      {/* The privacy notice. Linked from the footer, the join form's waiver
+          line and the coach application's consent section — every place the
+          site asks for personal details now has the answer to "and then
+          what happens to them?" one tap away. */}
+      <Route
+        path="/privacy"
+        element={
+          <Suspense fallback={<PublicBoot />}>
+            <Privacy />
           </Suspense>
         }
       />

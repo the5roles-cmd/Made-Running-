@@ -14,6 +14,8 @@
 // but differentiate by fill/weight instead of hue, to stay on-brand.
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { loginHref } from '../lib/authNext'
+import { REGISTRATION_OPEN } from '../lib/registration'
 import { tenant } from '../lib/theme'
 import BrandLogo from '../components/BrandLogo'
 
@@ -76,35 +78,55 @@ function AnimatedTitle({ text }) {
   )
 }
 
+// These doors MUST tell the same story as the homepage's QUICK_PATHS
+// (Landing.jsx). They used to say the exact opposite — runner "No account
+// needed", coach "Sign in required" — while the homepage said runners sign
+// in and prospective coaches walk straight into the public application
+// form. Two pages disagreeing about who needs an account is worse than
+// either answer (QA, Oct 2026). The homepage is the source of truth:
+//   · runner / community → through /login (the club's CRM knows who joined)
+//   · coach → the PUBLIC application form; an outsider we are trying to
+//     attract is never asked to make an account before applying
+//   · book a class → public timetable, no gate
+// The squiggle weights follow the meaning, not the old layout: solid for
+// open public doors, dashed hairline for the gated ones.
+const SIGNIN_META = REGISTRATION_OPEN ? 'Sign in or sign up' : 'Sign in required'
+
 const PATHS = [
   {
-    to: '/join',
+    to: loginHref('/join'),
+    key: 'runner',
     label: 'I am a Runner',
-    variant: 'solid',
+    variant: 'hairline',
     blurb: 'Register for a session and get on the start line.',
-    meta: 'No account needed',
+    meta: SIGNIN_META,
   },
   {
-    to: '/join',
+    to: loginHref('/join'),
     key: 'community',
     label: 'Join the Community',
-    variant: 'solid',
+    variant: 'hairline',
     blurb: 'New here? Join the crew — no one gets left behind.',
     meta: 'Everyone welcome',
   },
   {
-    to: '/login',
+    // A real file in public/, served by the host — not a React Router
+    // route. Needs a full document load, hence `external` (see the render
+    // branch below and the same note in Landing.jsx).
+    to: '/coach-application.html',
+    key: 'coach',
+    external: true,
     label: 'Coach at Made Running',
-    variant: 'hairline',
-    blurb: 'Run sessions, the Hub, volunteers and the community.',
-    meta: 'Sign in required',
+    variant: 'solid',
+    blurb: 'Coach sessions at the Hub — apply in five minutes.',
+    meta: 'No account needed',
   },
   {
     to: '/book',
     label: 'Book a Class',
     variant: 'solid',
-    blurb: 'HIIT, strength and spin at the Hub — live seats, pay online.',
-    meta: 'Instant booking',
+    blurb: 'HIIT, strength and spin at the Hub — the full weekly timetable.',
+    meta: 'See the timetable',
   },
   // The Shop door is back, but DEAD — the club asked for the button to be
   // visible again while the shop stays disabled (Oct 2026). `disabled: true`
@@ -582,11 +604,12 @@ export default function ChoosePath() {
               )
             }
             return p.external ? (
+              // Same tab, like the homepage's coach card: this is part of
+              // the same site, not an outbound link — a new tab would strand
+              // the gate screen behind the form.
               <a
                 key={id}
                 href={p.to}
-                target="_blank"
-                rel="noopener noreferrer"
                 style={{ '--i': i }}
                 className={cls}
                 onClick={() => rememberPath(id)}

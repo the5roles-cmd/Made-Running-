@@ -437,9 +437,25 @@ export default function BookGym() {
     setBusy(true)
     setWaitOffer(null)
 
-    // Try the real booking path. If the RPC is not deployed yet (PGRST202),
-    // this is not an error the VISITOR caused or can fix — record the
-    // request optimistically and tell them the truth about what happens next.
+    // ── The one rule of this function (QA, Oct 2026) ──────────────────
+    // A confirmation screen may only ever follow a SAVED booking, and a
+    // payment may only ever follow a confirmation. The previous version
+    // "recorded the request optimistically" when the RPC was missing —
+    // which showed a success screen for a booking that existed nowhere,
+    // and for "pay online" took real card payments against a seat no
+    // coach would ever see on a register. Both paths now end in
+    // bookingUnavailable() below: an honest refusal that keeps the form
+    // (and everything typed into it) on screen for a retry.
+    const bookingUnavailable = () => {
+      setFormErr(
+        'Online booking isn\u2019t switched on just yet, so nothing has been ' +
+        'saved and you haven\u2019t been charged. Come along and pay on ' +
+        'arrival, or message the club on Instagram (@made.running) and ' +
+        'they\u2019ll hold you a place.'
+      )
+      setBusy(false)
+    }
+
     if (supabaseConfigured) {
       try {
         const { data, error } = await supabase.rpc('book_hub_class', {
@@ -459,7 +475,7 @@ export default function BookGym() {
           // this page; the group-chat link and walk-ins set their own.
           p_source: 'website',
         })
-        // ── Only ONE kind of failure may fall through ─────────────────
+        // ── Every failure is told the truth, but not the SAME truth ──
         // book_hub_class does not raise on a refusal, it returns
         // { ok: false, reason }. So `!error` was never "it worked" — a full
         // class arrived here with error === null and was shown the
@@ -469,16 +485,14 @@ export default function BookGym() {
         //
         // PGRST202 means the function itself is not in the database yet.
         // An error with NO code is the other deployment state: the Supabase
-        // host did not answer at all (project paused or not yet created), so
-        // supabase-js surfaces a bare fetch failure instead of a PostgREST
-        // error. Both are states of OUR infrastructure, not something the
-        // visitor did — both fall through to the honest "we have your
-        // request" screen, which never claims a confirmed seat.
+        // host did not answer at all. Both are states of OUR infrastructure
+        // — the visitor gets "booking isn't switched on yet", which is what
+        // those states mean from where they stand, and crucially NOT a
+        // confirmation and NOT a checkout.
         //
         // Every error that carries any OTHER code came from a database that
-        // IS answering, and those are reported: a reachable database that
-        // errors on a booking is a refusal we must not paper over, because
-        // faking a booking sends someone to a class expecting them.
+        // IS answering mid-booking — a transient fault worth retrying, so
+        // its message says "try again in a moment" instead.
         if (error) {
           const dbUnreachable = error.code === 'PGRST202' || !error.code
           if (!dbUnreachable) {
@@ -489,7 +503,8 @@ export default function BookGym() {
             setBusy(false)
             return
           }
-          // else: fall through to the offline confirmation below
+          bookingUnavailable()
+          return
         } else if (data?.ok) {
           const placesBooked = data.places ?? (bookedFor === 'group' ? places : 1)
           // 'Pay online' is real now: ask the checkout endpoint for a
@@ -569,48 +584,20 @@ export default function BookGym() {
           return
         }
       } catch {
-        // fall through to the offline confirmation below
+        // A thrown fetch (host down mid-request) is the same infrastructure
+        // state as PGRST202 above, and gets the same honest refusal.
+        bookingUnavailable()
+        return
       }
+      return
     }
 
-    // Fallback: the sheet's own instruction. Honest about not being a
-    // confirmed seat, rather than faking one.
-    //
-    // 'Pay online' STILL works down here. The checkout endpoint prices the
-    // class itself from a server-side constant and touches no database —
-    // only the seat reservation is lost when Supabase is unreachable, not
-    // the club's Square account. The bookingId it wants is purely an
-    // idempotency key, so a browser-generated UUID stands in for the
-    // booking record that could not be written. Without this, a member who
-    // explicitly chose "pay online" was told "the club will send you a
-    // payment link" — a promise nobody could keep, because with no database
-    // there is no record to send a link FOR.
-    const offlinePlaces = bookedFor === 'group' ? places : 1
-    const offlinePayUrl =
-      method === 'online'
-        ? await fetchClassPayLink({
-            bookingId:
-              typeof crypto !== 'undefined' && crypto.randomUUID
-                ? crypto.randomUUID()
-                : `offline-${Date.now()}`,
-            title: active.title,
-            places: offlinePlaces,
-            email: email.trim() || undefined,
-          })
-        : null
-    setDone({
-      title: active.title, live: false,
-      places: offlinePlaces,
-      payMethod: method,
-      total: priceOf(active) * offlinePlaces,
-      payUrl: offlinePayUrl,
-      // Same interim-screen rule as the live path above.
-      redirecting: Boolean(offlinePayUrl),
-    })
-    setActive(null)
-    setBusy(false)
-    // Same rule as the live path: "pay online" means the card page, now.
-    if (offlinePayUrl) window.location.assign(offlinePayUrl)
+    // Supabase was never configured on this deployment: there is nothing to
+    // save a booking INTO, so there is nothing to confirm and nothing to
+    // charge for. (An earlier version ran a real Square checkout from here,
+    // keyed on a browser-minted UUID — money taken for a seat that existed
+    // in no system. That is the exact bug this function's one rule forbids.)
+    bookingUnavailable()
   }
 
   return (
@@ -640,13 +627,17 @@ export default function BookGym() {
           <div className="bk__panel bk__panel--done" role="status">
             <CheckCircle2 size={38} className="bk__doneIcon" aria-hidden="true" />
             <h2 className="bk__doneTitle">
+              {/* No "Request sent." fallback any more: every state that can
+                  reach this panel is a saved booking, a saved waitlist place,
+                  or a completed payment. The optimistic unsaved state was
+                  removed with the offline fallback (QA, Oct 2026). */}
               {done.paidReturn
                 ? 'Payment received.'
                 : done.redirecting
                   ? 'Taking you to payment\u2026'
                   : done.waitlisted
                     ? "You're on the list."
-                    : done.live ? "You're booked in." : "Request sent."}
+                    : "You're booked in."}
             </h2>
             <p className="bk__doneBody">
               {done.redirecting ? (
@@ -673,7 +664,7 @@ export default function BookGym() {
                   we&rsquo;ll email you — you&rsquo;ll have 12 hours to take it
                   before it passes to the next person.
                 </>
-              ) : done.live ? (
+              ) : (
                 <>
                   {done.places > 1 ? (
                     <><strong>{done.places} spaces</strong> for <strong>{done.title}</strong> are reserved.</>
@@ -681,12 +672,6 @@ export default function BookGym() {
                     <>Your space for <strong>{done.title}</strong> is reserved.</>
                   )}{' '}
                   See you there.
-                </>
-              ) : (
-                <>
-                  We&rsquo;ve got your name down for <strong>{done.title}</strong>. Spaces are
-                  confirmed in the class group chat — join it and say you&rsquo;re coming, and a
-                  coach will check you in on the day.
                 </>
               )}
             </p>
