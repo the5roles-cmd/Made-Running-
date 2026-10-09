@@ -8,6 +8,7 @@ import { User, Building2, KeyRound, LogOut, Check } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { supabase, supabaseConfigured, friendlyError } from '../lib/supabase'
 import { PageHead } from '../components/ui'
+import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT } from '../lib/password'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -269,8 +270,8 @@ function SecuritySection({ updatePassword }) {
     e.preventDefault()
     setErr(null)
 
-    if (newPw.length < 6) {
-      setErr('Password must be at least 6 characters.')
+    if (newPw.length < MIN_PASSWORD_LENGTH) {
+      setErr(PASSWORD_TOO_SHORT)
       return
     }
     // Guard against typos before calling the API — Supabase will accept any
@@ -319,8 +320,8 @@ function SecuritySection({ updatePassword }) {
             type="password"
             value={newPw}
             onChange={(e) => setNewPw(e.target.value)}
-            placeholder="At least 6 characters"
-            minLength={6}
+            placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
+            minLength={MIN_PASSWORD_LENGTH}
             autoComplete="new-password"
             disabled={!supabaseConfigured}
           />

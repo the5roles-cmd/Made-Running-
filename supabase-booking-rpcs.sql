@@ -127,11 +127,17 @@ begin
     return jsonb_build_object('ok', false, 'reason', 'name_required');
   end if;
 
-  -- A guest with no email cannot be reached, cannot be sent a manage
-  -- link, and cannot be offered a waiting-list place. A signed-in member
-  -- always has one on their account, so this only ever stops guests.
-  if auth.uid() is null and coalesce(trim(p_email), '') = '' then
-    return jsonb_build_object('ok', false, 'reason', 'email_required');
+  -- A guest with no contact details at all cannot be told about a
+  -- cancellation or a time change. EITHER channel will do (QA, Oct 2026:
+  -- "worth making at least one required"): email-only was the old rule
+  -- here, but it pushed phone-only members into typing fake addresses —
+  -- worse data than none — and the manage link is shown on screen, not
+  -- emailed, so email was never actually load-bearing. A signed-in member
+  -- always has an email on their account, so this only ever stops guests.
+  if auth.uid() is null
+     and coalesce(trim(p_email), '') = ''
+     and coalesce(trim(p_phone), '') = '' then
+    return jsonb_build_object('ok', false, 'reason', 'contact_required');
   end if;
 
   -- The next occurrence that has not already run. The 15-minute grace

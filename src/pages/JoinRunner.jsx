@@ -23,19 +23,12 @@ function parseRefCode() {
   return sanitised || null
 }
 
-// Shape-check for an OPTIONAL phone field. "abc" was accepted and stored as
-// a phone number (QA, Oct 2026) — a coach trying to ring that member on race
-// morning gets nothing. Deliberately locale-agnostic: this club runs in three
-// countries, so "looks like a UK mobile" would reject real members. Strip the
-// characters people legitimately type (spaces, dots, dashes, brackets), then
-// require 7–15 digits with an optional +: the E.164 length envelope. Empty is
-// fine — the field is optional and a fake number is worse than none.
-function phoneLooksValid(value) {
-  const v = value.trim()
-  if (!v) return true
-  const bare = v.replace(/[\s().-]/g, '')
-  return /^\+?\d{7,15}$/.test(bare)
-}
+// The phone shape-check lived here first (QA, Oct 2026: "abc" was accepted
+// and stored as a phone number). It moved to lib/phone.js when BookGym became
+// the second form that needed it — one definition of "a phone number", two
+// forms that cannot drift. Here the field stays optional: empty passes, and
+// a fake number is worse than none.
+import { phoneLooksValid } from '../lib/phone'
 
 export default function JoinRunner() {
   usePageTitle('Join the community')

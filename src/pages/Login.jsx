@@ -5,6 +5,7 @@ import AuthSplash from '../auth/AuthSplash'
 import { supabase, supabaseConfigured, friendlyError } from '../lib/supabase'
 import { safeNext } from '../lib/authNext'
 import { REGISTRATION_OPEN } from '../lib/registration'
+import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT } from '../lib/password'
 import { tenant } from '../lib/theme'
 import usePageTitle from '../lib/usePageTitle'
 import BrandLogo from '../components/BrandLogo'
@@ -139,6 +140,13 @@ export default function Login() {
         !business.trim()
       if (missing) {
         setErrorMsg('Please fill in every field — they are all required.')
+        return
+      }
+      // New passwords only: the sign-in path never length-checks, because
+      // members who chose a shorter password before the minimum was raised
+      // still own it, and the server is the judge of existing credentials.
+      if (password.length < MIN_PASSWORD_LENGTH) {
+        setErrorMsg(PASSWORD_TOO_SHORT)
         return
       }
     }
@@ -562,9 +570,12 @@ export default function Login() {
                   className="input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === 'signup' ? 'Choose a password (≥ 6 chars)' : '••••••••'}
+                  placeholder={mode === 'signup' ? `Choose a password (≥ ${MIN_PASSWORD_LENGTH} chars)` : '••••••••'}
                   required
-                  minLength={6}
+                  // minLength only when CHOOSING a password. On the sign-in
+                  // tab the browser would otherwise refuse to submit a valid
+                  // existing password shorter than the new minimum.
+                  minLength={mode === 'signup' ? MIN_PASSWORD_LENGTH : undefined}
                   disabled={disabled}
                   autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                 />

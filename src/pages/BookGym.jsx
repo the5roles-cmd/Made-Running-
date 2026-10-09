@@ -45,6 +45,7 @@ import {
   Link2 as LinkIcon,
 } from 'lucide-react'
 import { supabase, supabaseConfigured } from '../lib/supabase'
+import { phoneLooksValid } from '../lib/phone'
 import { tenant } from '../lib/theme'
 import BrandLogo from '../components/BrandLogo'
 import { useAuth } from '../auth/AuthProvider'
@@ -149,8 +150,17 @@ function mergeCoach(cls, db, coachBySlug, bioByName) {
 // setFormErr(undefined) renders an empty red box — a page that visibly
 // failed while saying nothing about it.
 const REFUSAL_COPY = {
+  // Two generations of the same server rule, both mapped because both can
+  // arrive: 'email_required' is what the database says until the club
+  // re-runs supabase-booking-rpcs.sql; 'contact_required' is what it says
+  // after (either email OR phone satisfies it, matching the form's own
+  // check in submitBooking). Dropping the old key the day the new one
+  // shipped would show a phone-only guest the unmapped-reason default —
+  // 'we could not book that' with no hint that one more field fixes it.
   email_required:
     'Please add an email address — it is how the coach confirms your place.',
+  contact_required:
+    'Please add an email or a phone number so the club can reach you about this booking.',
   past:
     'That class has already started. Have a look at the next one on the timetable.',
   paused:
@@ -420,6 +430,26 @@ export default function BookGym() {
     setFormErr('')
     if (!fullName.trim()) {
       setFormErr('Please tell us your name so the coach knows who to expect.')
+      return
+    }
+    // ── At least one way to reach you (QA, Oct 2026) ───────────────────
+    // Both fields used to be optional, so someone could book with neither —
+    // and if the class was cancelled or moved, the club had no way to tell
+    // them. Either one on its own is fine: forcing email specifically would
+    // just push phone-only members into typing a fake address, which is
+    // worse data than none. HTML `required` can't say "one of these two",
+    // so the pair is checked here at submit.
+    if (!email.trim() && !phone.trim()) {
+      setFormErr(
+        'Please add an email or a phone number — it\u2019s the only way the ' +
+        'club can reach you if the class is cancelled or the time changes.'
+      )
+      return
+    }
+    // And if phone is the contact they gave, it has to be a reachable one —
+    // same E.164-envelope shape check the join form uses (lib/phone.js).
+    if (!phoneLooksValid(phone)) {
+      setFormErr('That phone number doesn\u2019t look right — check the digits and try again.')
       return
     }
     // Booking FOR someone means the coach needs their name, not yours — the
@@ -787,19 +817,33 @@ export default function BookGym() {
                   onChange={(e) => setFullName(e.target.value)}
                 />
               </div>
+              {/* Both said "optional" (QA, Oct 2026) — so a booking could
+                  arrive with no way to reach its owner about a cancellation.
+                  Now the PAIR is required and each field is individually
+                  skippable: the labels say which one, the hint above says
+                  why, and submitBooking enforces it (HTML `required` cannot
+                  express "one of these two"). aria-describedby ties the hint
+                  to both inputs so a screen reader hears the rule where the
+                  typing happens, not just in page order. */}
+              <p className="bk__contactHint" id="bk-contact-hint">
+                Leave us an email or a phone number (either is fine) — it&rsquo;s
+                how we reach you if the class is cancelled or the time changes.
+              </p>
               <div className="bk__field">
-                <label htmlFor="bk-email">Email <span className="bk__opt">optional</span></label>
+                <label htmlFor="bk-email">Email <span className="bk__opt">or phone below</span></label>
                 <input
                   id="bk-email" type="email" className="bk__input" value={email}
                   autoComplete="email" placeholder="you@example.com"
+                  aria-describedby="bk-contact-hint"
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="bk__field">
-                <label htmlFor="bk-phone">Phone <span className="bk__opt">optional</span></label>
+                <label htmlFor="bk-phone">Phone <span className="bk__opt">or email above</span></label>
                 <input
                   id="bk-phone" type="tel" className="bk__input" value={phone}
                   autoComplete="tel" placeholder="07700 900123"
+                  aria-describedby="bk-contact-hint"
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
@@ -1946,6 +1990,15 @@ const BOOK_CSS = `
 .bk__opt {
   font-family: var(--font-body); font-weight: 400;
   font-size: 12px; color: var(--muted); margin-left: 6px;
+}
+/* The one sentence that explains the either/or contact rule. Sits between
+   the name field and the pair it governs; --muted is the same AA-checked
+   tone the .bk__opt tags use. */
+.bk__contactHint {
+  margin: 2px 0 2px;
+  font-size: 13px; line-height: 1.55;
+  color: var(--muted);
+  max-width: 48ch;
 }
 .bk__input {
   width: 100%; min-height: 46px; padding: 0 14px;

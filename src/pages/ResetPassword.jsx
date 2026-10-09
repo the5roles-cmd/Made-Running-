@@ -18,6 +18,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { tenant } from '../lib/theme'
 import usePageTitle from '../lib/usePageTitle'
+import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT } from '../lib/password'
 import BrandLogo from '../components/BrandLogo'
 
 export default function ResetPassword() {
@@ -60,8 +61,8 @@ export default function ResetPassword() {
     if (disabled) return
     setErrorMsg('')
 
-    if (password.length < 6) {
-      setErrorMsg('Choose a password of at least 6 characters.')
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setErrorMsg(PASSWORD_TOO_SHORT)
       return
     }
     // Checked here rather than left to the two fields disagreeing at the
@@ -259,9 +260,9 @@ export default function ResetPassword() {
                     className="input"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 6 characters"
+                    placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
                     required
-                    minLength={6}
+                    minLength={MIN_PASSWORD_LENGTH}
                     disabled={disabled}
                     autoComplete="new-password"
                   />
@@ -276,7 +277,7 @@ export default function ResetPassword() {
                     onChange={(e) => setConfirm(e.target.value)}
                     placeholder="Type it again"
                     required
-                    minLength={6}
+                    minLength={MIN_PASSWORD_LENGTH}
                     disabled={disabled}
                     autoComplete="new-password"
                   />
