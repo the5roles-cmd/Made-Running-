@@ -45,6 +45,7 @@ import {
   Link2 as LinkIcon,
 } from 'lucide-react'
 import { supabase, supabaseConfigured } from '../lib/supabase'
+import { JOIN_PUBLIC } from '../lib/joinPublic'
 import { phoneLooksValid } from '../lib/phone'
 import { tenant } from '../lib/theme'
 import BrandLogo from '../components/BrandLogo'
@@ -1420,7 +1421,16 @@ export default function BookGym() {
         )}
 
         <p className="bk__links">
-          {!user && (
+          {/* The last "Join the community" on the public site. Gated on the
+              same flag as the homepage buttons so the club's instruction
+              holds one hop deep as well — someone who came for the
+              timetable should not be invited to join from a page where the
+              homepage no longer asks. `!user &&` stays the inner condition:
+              even with the ask switched back on, a signed-in member has
+              nothing to join. The separator lives INSIDE the fragment, so
+              removing the link cannot leave a stray middot in front of
+              "Back to home". See src/lib/joinPublic.js. */}
+          {JOIN_PUBLIC && !user && (
             <>
               <Link to="/join">Join the community</Link>
               {' · '}

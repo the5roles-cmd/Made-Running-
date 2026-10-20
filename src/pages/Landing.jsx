@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { loginHref, signupHref } from '../lib/authNext'
+import { CRM_PUBLIC } from '../lib/crmPublic'
+import { JOIN_PUBLIC } from '../lib/joinPublic'
 import { REGISTRATION_OPEN } from '../lib/registration'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { InstagramMark } from '../components/BrandMarks'
@@ -290,18 +292,75 @@ const PROOF_CHIPS = [
 // Computed once at module scope rather than inline in each card: the flag
 // cannot change at runtime, so re-deriving it per render would be noise, and
 // naming it makes any card that shares the promise visibly share it.
-const SIGNIN_META = REGISTRATION_OPEN ? 'Create your account' : 'Sign in required'
+// With the CRM detached there is no account to create and no sign-in to
+// require, so BOTH of the old promises would be lies — and this card's meta
+// is read as a warning about what happens after the click. "No account
+// needed" is the truth, and it is the same phrase the coach card already
+// uses for the same reason.
+const SIGNIN_META = !CRM_PUBLIC
+  ? 'No account needed'
+  : REGISTRATION_OPEN
+  ? 'Create your account'
+  : 'Sign in required'
+
+// Where every "join the club" button on this page actually goes.
+//
+// Four buttons share this one destination — nav, hero, quick card, footer
+// panel — and they were drifting: each had its own signupHref('/join') call,
+// so a change had to be made in four places and was once made in three.
+// Named once at module scope (the flag cannot change at runtime, so this is
+// also one fewer thing to re-derive per render) means the four promises
+// cannot disagree about where they lead.
+//
+// Detached: straight to the club's own no-account form. Attached: back
+// through the CRM's Create account tab, which is what it was before.
+const JOIN_DEST = CRM_PUBLIC ? signupHref('/join') : '/join'
+
+// ── The small card row under the hero ───────────────────────────────────────
+//
+// Local to this file on purpose, unlike CRM_PUBLIC and JOIN_PUBLIC, which
+// live in src/lib because three or four files ask them the same question.
+// Exactly one place reads this one, so it is declared beside the array it
+// switches off rather than exported into a lib nothing else imports. A flag
+// in lib/ implies "ask me from anywhere"; this is not that.
+//
+// ⚠️  READ THIS BEFORE WONDERING WHERE THE NAVIGATION WENT.
+// With the join CTAs already gone (JOIN_PUBLIC) and "Log in" gone with the
+// CRM (CRM_PUBLIC), these three cards were the LAST links out of the landing
+// page. Switching them off leaves the homepage with the wordmark, Instagram
+// and Privacy — and that is all. /book, /coaches and coach-application.html
+// still work, still render and are still in the sitemap, but nothing on the
+// site points at them any more: they are URL-and-bookmark doors now, exactly
+// like /login. That is the club's call (Oct 2026) and it is deliberate — the
+// homepage is a film about the club, not a menu — but it is a big enough
+// consequence to be written down rather than discovered.
+//
+// Flip to true to bring the row back. The array below is untouched and the
+// grid sizes itself from its length, so nothing else needs editing.
+const SHOW_QUICK_PATHS = false
 
 const QUICK_PATHS = [
   // ONE join door, not two. "I am a Runner" and "Join the Community" both
   // pointed at /join, and a visitor who read both labels had to guess what
   // the difference was — there wasn't one (QA, Oct 2026). Merged: the label
-  // keeps the club's phrase, the meta names both audiences. `signup: true`
-  // routes it through signupHref so a newcomer lands on the Create account
-  // tab, not the Sign in tab; a returning member with a live session never
-  // sees either. The meta tracks REGISTRATION_OPEN like every promise here —
-  // see src/lib/registration.js.
-  { dest: '/join', key: 'join', signup: true, label: 'Join the Community', meta: SIGNIN_META },
+  // keeps the club's phrase, the meta names both audiences.
+  //
+  // `signup: true` used to be the whole story: it routed the card through
+  // signupHref so a newcomer landed on the Create account tab. It is now only
+  // consulted while the CRM is attached — detached, the render branch below
+  // sends every non-external card straight to its `dest`, and this card
+  // becomes the plain /join form it always claimed to be. The flag stays so
+  // re-attaching is one line, not a rewrite. See src/lib/crmPublic.js.
+  //
+  // Spread, not listed: the club asked for "Join the Community" removed
+  // everywhere (Oct 2026), and this card carried the literal phrase, so
+  // leaving it would have left the loudest two buttons gone and the quiet
+  // one still asking. Dropping the entry rather than hiding the rendered
+  // card is what lets the grid size itself — see tp-hero__quick-grid, whose
+  // columns are now QUICK_PATHS.length. See src/lib/joinPublic.js.
+  ...(JOIN_PUBLIC
+    ? [{ dest: '/join', key: 'join', signup: true, label: 'Join the Community', meta: SIGNIN_META }]
+    : []),
   // The Shop card is back, but DEAD — the club asked for the button to be
   // visible again while the shop stays disabled (Oct 2026). `disabled: true`
   // renders a <span>, never a link: there is no /shop route to point at, so
@@ -707,6 +766,13 @@ export default function Landing() {
         .tp-nav__brand {
           display: flex;
           align-items: center;
+          /* Holds the right edge even when the actions row is not rendered
+             at all. space-between needs two children to push anything
+             anywhere; with the wordmark as the header's ONLY child it would
+             sit flush LEFT, against the club's "logo on top right side".
+             An auto margin absorbs the free space before space-between gets
+             to distribute it, so this is correct in both states. */
+          margin-left: auto;
           gap: 10px;
           font-family: var(--font-display);
           font-size: 1.05rem;
@@ -914,8 +980,13 @@ export default function Landing() {
         }
         .tp-hero__quick-grid {
           display: grid;
-          /* Four doors since the runner/community merge (QA, Oct 2026). */
-          grid-template-columns: repeat(4, 1fr);
+          /* Column count is DERIVED, not typed. It was 4 after the runner/
+             community merge and 3 once the join card left with JOIN_PUBLIC
+             (Oct 2026) — a hardcoded repeat(4) would have left a column of
+             dead air beside three cards, and whoever flips the flag back
+             would have to remember to edit CSS too. Interpolated here, the
+             grid can only ever be as wide as the array is long. */
+          grid-template-columns: repeat(${QUICK_PATHS.length}, 1fr);
           gap: 10px;
         }
         .tp-qcard {
@@ -983,8 +1054,16 @@ export default function Landing() {
           color: rgba(255,255,255,0.72);
         }
         @media (max-width: 1000px) {
-          /* Four doors fold to a clean 2×2 — no spanning odd one out. */
+          /* Two columns at any count. Four folded to a clean 2×2; three
+             would leave a hole beside the last card, so an ODD last card
+             takes the full row instead. The selector reads "the last child,
+             if it is also at an odd position" — true for card 3 of 3, false
+             for card 4 of 4 — so this self-corrects if the join card ever
+             comes back and never needs touching again. */
           .tp-hero__quick-grid { grid-template-columns: repeat(2, 1fr); }
+          .tp-hero__quick-grid > :last-child:nth-child(odd) {
+            grid-column: 1 / -1;
+          }
         }
         @media (prefers-reduced-motion: reduce) {
           .tp-qcard { transition: none; }
@@ -1551,6 +1630,12 @@ export default function Landing() {
           max-width: 46ch;
           margin: 0 auto 36px;
         }
+        /* That 36px exists to clear the button below. With JOIN_PUBLIC false
+           there is no button, this paragraph is last, and the margin would
+           stack on the panel's own padding and read as a lopsided gap before
+           the footer. Keyed to :last-child so it corrects itself either way
+           rather than being a number someone has to remember to change. */
+        .tp-footer-cta__sub:last-child { margin-bottom: 0; }
         .tp-footer-cta__btn {
           display: inline-flex;
           align-items: center;
@@ -1778,20 +1863,40 @@ export default function Landing() {
           swap of which child comes first; the 430px budget in the media
           query below is unchanged, just mirrored. */}
       <header className="tp-nav">
+        {/* ── The actions row only exists if it has something in it ─────────
+            Both of its children are now behind flags, and with both false an
+            empty <nav> would still announce a navigation landmark to a screen
+            reader and still claim a flex slot. So the element itself is
+            conditional. The brand carries margin-left:auto for this case:
+            space-between would otherwise slide the wordmark to the LEFT when
+            it becomes the header's only child, and the club's instruction was
+            "the logo should be displayed on top right side". */}
+        {(CRM_PUBLIC || JOIN_PUBLIC) && (
         <nav className="tp-nav__actions">
-          {/* Both used to enter through the /start door-chooser. Now that the
-              hero cards go straight to /login, a button labelled "Log in" that
-              opened a menu of doors instead was the odd one out — and the
-              chooser still advertised the old ungated destinations. Both land
-              on /login; the two tabs there are exactly the two intents. */}
-          {/* Two doors, two tabs: "Log in" is for people who HAVE an account,
-              so it opens on Sign in; "Get started" is by definition for people
-              who don't, so it opens on Create account (QA, Oct 2026). */}
-          <Link to={loginHref('/app')} className="tp-nav__login">Log in</Link>
-          <Link to={signupHref('/join')} className="tp-nav__cta">
-            Get started <ArrowRight size={13} />
-          </Link>
+          {/* ── "Log in": the one door with no public equivalent ──────────
+              Every other button on this page has somewhere honest to go once
+              the CRM is detached — the join form, the timetable, the coach
+              application. This one only ever meant /app, so with CRM_PUBLIC
+              false it is not re-pointed, it is REMOVED: a nav button that
+              led nowhere, or quietly led to the join form instead, would be
+              worse than no button. Staff still reach the workspace by URL or
+              bookmark (see src/lib/crmPublic.js) — this hides the door from
+              passers-by, it does not lock the club out. */}
+          {CRM_PUBLIC && (
+            <Link to={loginHref('/app')} className="tp-nav__login">Log in</Link>
+          )}
+          {/* "Get started" was the loudest ask on the site and the first
+              thing the club wanted gone (Oct 2026). It is flagged rather
+              than deleted so the whole ask comes back in one line — and it
+              still reads JOIN_DEST when it does, so it cannot drift from the
+              hero and the footer panel. See src/lib/joinPublic.js. */}
+          {JOIN_PUBLIC && (
+            <Link to={JOIN_DEST} className="tp-nav__cta">
+              Get started <ArrowRight size={13} />
+            </Link>
+          )}
         </nav>
+        )}
         <Link to="/" className="tp-nav__brand">
           {/* This nav sits on the near-black landing page (bg #0a0a0a), so
               the surface is DARK and the wordmark must be the WHITE file —
@@ -1852,19 +1957,20 @@ export default function Landing() {
               height={232}
             />
           </h1>
-          <div className="tp-hero__ctas">
-            {/* One door, front and centre — same destination as its quick
-                card below, so the promise and the button never disagree. */}
-            {/* Through the same gate as the quick cards below it. Leaving the
-                hero's biggest button as the one ungated way in would have made
-                the sign-in step look optional. */}
-            {/* signupHref, not loginHref: "Join" is a newcomer's verb, so the
-                door opens on Create account (QA, Oct 2026). Members with a
-                session skip the form entirely either way. */}
-            <Link to={signupHref('/join')} className="tp-btn-primary">
-              Join the Community <ArrowRight size={14} />
-            </Link>
-          </div>
+          {/* The hero's one door, front and centre — and the second thing
+              the club asked to remove (Oct 2026). The whole .tp-hero__ctas
+              row goes with it, not just the <Link>: it held nothing else,
+              and an empty flex row would still contribute its gap and its
+              line box under the slogan. With it gone the hero is the film,
+              the slogan and the quick grid — which is what the club wanted
+              the top of the page to say. */}
+          {JOIN_PUBLIC && (
+            <div className="tp-hero__ctas">
+              <Link to={JOIN_DEST} className="tp-btn-primary">
+                Join the Community <ArrowRight size={14} />
+              </Link>
+            </div>
+          )}
         </Reveal>
 
         <Reveal className="tp-hero__brand" as="div" delay={100}>
@@ -1879,7 +1985,12 @@ export default function Landing() {
           />
         </Reveal>
 
-        {/* The four doors, small. Full-width row under both hero columns. */}
+        {/* The doors, small. Full-width row under both hero columns — and
+            switched off at the club's instruction (Oct 2026), the last of
+            three passes that stripped the hero back to the film, the slogan
+            and nothing to press. See SHOW_QUICK_PATHS above for what that
+            costs and how to undo it. */}
+        {SHOW_QUICK_PATHS && (
         <Reveal className="tp-hero__quick" as="div" delay={180}>
           <nav className="tp-hero__quick-grid" aria-label="Choose your path">
             {/* Two branches, because two different kinds of destination.
@@ -1901,6 +2012,12 @@ export default function Landing() {
               //   public   → an in-app route with no sign-in gate (/book)
               //   signup   → behind /login, opened on Create account
               //   default  → behind /login, opened on Sign in
+              //
+              // The last two only exist while the CRM is attached. Detached,
+              // `!CRM_PUBLIC` collapses them into `public`: every in-app card
+              // goes straight to its own route and none of them touch /login.
+              // The per-card flags are left in place so one line in
+              // src/lib/crmPublic.js puts the gate back.
               if (p.disabled) {
                 return (
                   <span
@@ -1923,7 +2040,7 @@ export default function Landing() {
                 <Link
                   key={p.key || p.dest}
                   to={
-                    p.public
+                    p.public || !CRM_PUBLIC
                       ? p.dest
                       : p.signup
                       ? signupHref(p.dest)
@@ -1937,6 +2054,7 @@ export default function Landing() {
             })}
           </nav>
         </Reveal>
+        )}
         </div>
       </section>
 
@@ -2223,9 +2341,16 @@ export default function Landing() {
             Whether it is your first mile or your fastest, there is a group here
             that moves at your pace. Turn up, say hello, run.
           </p>
-          <Link to={signupHref('/join')} className="tp-footer-cta__btn">
-            Join the Community <ArrowRight size={14} />
-          </Link>
+          {/* The last button on the page. Without it this panel stops being
+              a pitch and becomes a sign-off: "Come and run with us", and no
+              form to fill. The paragraph above carries a 36px bottom margin
+              meant to clear this button, which its :last-child rule now
+              drops — see .tp-footer-cta__sub. */}
+          {JOIN_PUBLIC && (
+            <Link to={JOIN_DEST} className="tp-footer-cta__btn">
+              Join the Community <ArrowRight size={14} />
+            </Link>
+          )}
         </Reveal>
       </section>
 

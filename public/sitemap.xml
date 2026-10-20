@@ -1,17 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Made Running sitemap. Hand-maintained: the public surface is seven URLs
+<!-- Made Running sitemap. Hand-maintained: the public surface is six URLs
      and changes only when a route is added, so a build-time generator would
      be more machinery than content. Class pages (/c/:slug) join the list
-     when the class database goes live and the slugs become stable. -->
+     when the class database goes live and the slugs become stable.
+
+     /join is deliberately ABSENT (Oct 2026). The club asked for every "Join
+     the Community" button removed — see src/lib/joinPublic.js — and a
+     sitemap is a request to a crawler to index and rank a page, not a note
+     to ourselves. Listing a form no button offers would have left it as the
+     top result for "join made running": a LOUDER door than the one we just
+     took down, not a quieter one. The route still works for anyone the club
+     sends the URL to; it is simply no longer advertised.
+
+     If JOIN_PUBLIC goes back to true, add the entry back here too — the
+     buttons and this file have to agree about what the site offers. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://maderunning.co.uk/</loc>
   </url>
   <url>
     <loc>https://maderunning.co.uk/start</loc>
-  </url>
-  <url>
-    <loc>https://maderunning.co.uk/join</loc>
   </url>
   <url>
     <loc>https://maderunning.co.uk/book</loc>

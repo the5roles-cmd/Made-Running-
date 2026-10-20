@@ -30,4 +30,20 @@
 //
 // Keep the two in agreement. This constant decides what the UI offers and
 // promises; the dashboard setting decides what the server actually permits.
-export const REGISTRATION_OPEN = true
+//
+// ── Closed, because nothing points at it any more (Oct 2026) ────────────────
+// The CRM was detached from the public site (src/lib/crmPublic.js), so not a
+// single link on maderunning.co.uk leads to the Create account tab. Leaving
+// the tab rendering for anyone who typed /login would have left the one path
+// that actually did damage wide open: a signup owning zero orgs triggers the
+// create_org RPC in Login.jsx, so every stranger who found the URL minted
+// their own workspace inside the club's Supabase project. Those rows were
+// never visible to the club — a different org, correctly walled off by RLS —
+// but they accumulated for ever, and the club pays for the project.
+//
+// This costs the club nothing, because website signup was never a valid way
+// to make a STAFF account: it makes you the owner of a brand-new workspace,
+// not a member of theirs. Staff accounts are made in the Supabase dashboard
+// and given a membership row — exactly the two steps in
+// supabase-recover-staff-login.sql.
+export const REGISTRATION_OPEN = false

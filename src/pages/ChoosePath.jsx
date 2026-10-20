@@ -16,6 +16,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { signupHref } from '../lib/authNext'
 import { REGISTRATION_OPEN } from '../lib/registration'
+import { CRM_PUBLIC } from '../lib/crmPublic'
+import { JOIN_PUBLIC } from '../lib/joinPublic'
 import { tenant } from '../lib/theme'
 import usePageTitle from '../lib/usePageTitle'
 import BrandLogo from '../components/BrandLogo'
@@ -91,23 +93,41 @@ function AnimatedTitle({ text }) {
 //   · book a class → public timetable, no gate
 // The squiggle weights follow the meaning, not the old layout: solid for
 // open public doors, dashed hairline for the gated ones.
-const SIGNIN_META = REGISTRATION_OPEN ? 'Create your account' : 'Sign in required'
+// Same honesty rule as the homepage: with the CRM detached this door asks for
+// no account at all, so neither old promise is true. See src/lib/crmPublic.js.
+const SIGNIN_META = !CRM_PUBLIC
+  ? 'No account needed'
+  : REGISTRATION_OPEN
+  ? 'Create your account'
+  : 'Sign in required'
 
 const PATHS = [
   // ONE join door, matching the homepage (QA, Oct 2026: "I am a Runner" and
   // "Join the Community" went to the same place, so two cards were one
-  // choice wearing two labels). Runner or supporter, the destination is
-  // /join via the Create account tab — signupHref, because anyone picking
-  // this door is new by definition; a signed-in member passes through
-  // without seeing a form.
-  {
-    to: signupHref('/join'),
-    key: 'join',
-    label: 'Join the Community',
-    variant: 'hairline',
-    blurb: 'Runner or supporter — get on the start line. No one gets left behind.',
-    meta: SIGNIN_META,
-  },
+  // choice wearing two labels).
+  //
+  // This page is no longer linked from the nav — the homepage cards replaced
+  // the door-chooser — but it is still routable AND still listed in
+  // public/sitemap.xml, so a crawler or an old bookmark can land here. That
+  // makes it a real public door, and it gets the same treatment as the
+  // homepage: straight to /join while the CRM is detached, back through the
+  // Create account tab when it is attached.
+  //
+  // And gone entirely while JOIN_PUBLIC is false. This page is exactly why
+  // that flag is not a Landing.jsx detail: the club asked for "Join the
+  // Community" removed, and a visitor arriving from the sitemap would
+  // otherwise have found it here, one URL off the homepage, still asking.
+  // See src/lib/joinPublic.js.
+  ...(JOIN_PUBLIC
+    ? [{
+        to: CRM_PUBLIC ? signupHref('/join') : '/join',
+        key: 'join',
+        label: 'Join the Community',
+        variant: 'hairline',
+        blurb: 'Runner or supporter — get on the start line. No one gets left behind.',
+        meta: SIGNIN_META,
+      }]
+    : []),
   {
     // A real file in public/, served by the host — not a React Router
     // route. Needs a full document load, hence `external` (see the render
@@ -120,17 +140,17 @@ const PATHS = [
     blurb: 'Coach sessions at the Hub — apply in five minutes.',
     meta: 'No account needed',
   },
-  {
-    to: '/book',
-    label: 'Book a Class',
-    variant: 'solid',
-    blurb: 'HIIT, strength and spin at the Hub — the full weekly timetable.',
-    meta: 'See the timetable',
-  },
   // The Shop door is back, but DEAD — the club asked for the button to be
   // visible again while the shop stays disabled (Oct 2026). `disabled: true`
   // renders a non-interactive card: no href, no onClick, no "last time"
   // memory. When the shop reopens, drop the flag and give it a real `to`.
+  //
+  // It sits in the MIDDLE, not last, and that is deliberate. With the join
+  // card gone there are three doors, and the odd-last-child rule above gives
+  // the final card the full width of the row — a genuinely useful piece of
+  // emphasis that must not land on the one card you cannot press. Left last,
+  // "Coming soon" became the biggest thing on the page (caught in review).
+  // Order here is layout, so it is set here rather than in CSS.
   {
     key: 'shop',
     disabled: true,
@@ -138,6 +158,15 @@ const PATHS = [
     variant: 'hairline',
     blurb: 'Made Running kit and club colours.',
     meta: 'Coming soon',
+  },
+  // Last, and therefore full-width while the count is odd: the club's live
+  // action, and the thing a visitor who read this far most likely wants.
+  {
+    to: '/book',
+    label: 'Book a Class',
+    variant: 'solid',
+    blurb: 'HIIT, strength and spin at the Hub — the full weekly timetable.',
+    meta: 'See the timetable',
   },
 ]
 
@@ -335,9 +364,14 @@ export default function ChoosePath() {
           grid-template-columns: 1fr 1fr;
           gap: var(--s4);
         }
-        /* Four doors since the runner/community merge (QA, Oct 2026) — a
-           clean 2×2, so the old "odd one spans" rule is gone with the
-           fifth card. */
+        /* Four doors folded to a clean 2×2 and the old "odd one spans" rule
+           was deleted with the fifth card. Three doors since the join card
+           left with JOIN_PUBLIC (Oct 2026), which brings the hole back — so
+           the rule comes back too, keyed to the COUNT rather than to a
+           specific card: the last child, if it is at an odd position, takes
+           the whole row. True for 3 of 3, false for 2 of 2 and 4 of 4, so
+           it is correct whichever way the flag is set. */
+        .cp-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 
         .cp-option {
           display: block;

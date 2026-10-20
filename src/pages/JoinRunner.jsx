@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../lib/supabase'
+import { CRM_PUBLIC } from '../lib/crmPublic'
 import { tenant } from '../lib/theme'
 import usePageTitle from '../lib/usePageTitle'
 import BrandLogo from '../components/BrandLogo'
@@ -389,11 +390,22 @@ export default function JoinRunner() {
           className="muted"
           style={{ textAlign: 'center', marginTop: 'var(--s5)', fontSize: 'var(--fs-sm)' }}
         >
-          Made Running staff?{' '}
-          <Link to="/login" style={{ color: 'var(--accent-ink)' }}>
-            Sign in here
-          </Link>
-          {' · '}
+          {/* The staff cross-link is the LAST way into the CRM from the
+              public side, and it is one hop downstream of the landing page's
+              four join buttons — which now all arrive here. Leaving it would
+              have made detaching the CRM cosmetic: a visitor would reach the
+              workspace in two clicks instead of one. The separator lives
+              inside the conditional so removing the link does not leave a
+              stray middot in front of "Back to home". */}
+          {CRM_PUBLIC && (
+            <>
+              Made Running staff?{' '}
+              <Link to="/login" style={{ color: 'var(--accent-ink)' }}>
+                Sign in here
+              </Link>
+              {' · '}
+            </>
+          )}
           <Link to="/" style={{ color: 'var(--accent-ink)' }}>
             &larr; Back to home
           </Link>
