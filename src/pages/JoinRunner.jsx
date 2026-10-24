@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, supabaseConfigured } from '../lib/supabase'
+import { DEMO_DATA, demoInsert } from '../lib/demoData'
 import { CRM_PUBLIC } from '../lib/crmPublic'
 import { tenant } from '../lib/theme'
 import usePageTitle from '../lib/usePageTitle'
@@ -46,7 +47,18 @@ export default function JoinRunner() {
   // Lazy init so the URL parse runs once, not on every render.
   const [refCode] = useState(() => parseRefCode())
 
-  const disabled = !supabaseConfigured || busy
+  // ── Why DEMO_DATA counts as "configured" here ─────────────────────────────
+  // Without it this button is permanently disabled in the prospect demo, and
+  // disabled SILENTLY: <SetupNotice> used to explain why, and it is now
+  // suppressed in demo builds because its advice ("copy .env.example") is
+  // addressed to a developer rather than a club. A dead control with no reason
+  // given is worse than either.
+  //
+  // So the demo registers for real, into the in-memory fixture store. That is
+  // also the most persuasive thirty seconds the demo has: fill this in, open
+  // Runners, and the new name is at the top of the list — which is exactly the
+  // claim being made about the live product, demonstrated rather than asserted.
+  const disabled = (!supabaseConfigured && !DEMO_DATA) || busy
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -73,6 +85,29 @@ export default function JoinRunner() {
     }
 
     setBusy(true)
+
+    // The demo has no register_runner to call — and no Supabase client to call
+    // it on, so this would be a TypeError rather than a handled error. Writes
+    // go to the fixture store instead, carrying the same fields the RPC would
+    // have persisted so the Runners list shows the same row.
+    //
+    // Status 'new' and the 'new-to-running' tag match what register_runner
+    // stamps, deliberately: a demo that filed signups differently from
+    // production would be demonstrating something the club will not get.
+    if (DEMO_DATA) {
+      demoInsert('records', {
+        title: fullName.trim(),
+        email: email.trim() || null,
+        phone: phone.trim() || null,
+        status: 'new',
+        tags: refCode ? ['new-to-running', `ref:${refCode}`] : ['new-to-running'],
+        summary: `Registered via the website${location.trim() ? ` — ${location.trim()}` : ''}.`,
+      })
+      setDone(true)
+      setBusy(false)
+      return
+    }
+
     const args = {
       p_slug: tenant.key,
       p_full_name: fullName.trim(),

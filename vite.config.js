@@ -51,8 +51,65 @@ function assertNotDemoBuild(mode) {
   )
 }
 
+// ── Refuse to BUILD a public signup funnel into the club's database ─────────
+//
+// VITE_PUBLIC_DOORS=1 re-opens the CRM doors on a DEPLOYED build (see
+// src/lib/localOnly.js). That exists for one reason: a prospect demo that can
+// be sent as a URL. On that build it is safe, because the demo ships with no
+// Supabase credentials — the doors open onto nothing.
+//
+// Set the same variable on the club's project and it means something else
+// entirely. "Get started" would again point at the Create account tab, which
+// calls create_org against the club's live Postgres, and every stranger who
+// pressed it would mint a permanent workspace the club cannot see. That is
+// the exact problem the October detachment was done to stop.
+//
+// The buttons were never the danger; what pressing them WRITES is. So the
+// guard tests the conjunction that is actually unsafe:
+//
+//     doors open  AND  a real database  AND  registration not demo-stubbed
+//
+// Which leaves every legitimate build alone:
+//   • the club's production build — no doors variable → passes
+//   • the prospect demo          — no database        → passes
+//   • any dev server             — command is serve   → not checked
+//
+// and fails exactly one: someone switching the funnel back on over live data.
+// Note this deliberately does NOT hardcode the club's project URL. The rule is
+// "doors + any real database", which stays true if the club ever migrates.
+function assertSafeDoorsBuild(mode) {
+  const env = loadEnv(mode, process.cwd(), '')
+  if (env.VITE_PUBLIC_DOORS !== '1') return
+
+  // Mirrors isPlaceholder() in src/lib/supabase.js: empty, "your…" and the
+  // example host all mean "no database", and must mean it identically here,
+  // or the guard would pass a build the app then treats as live.
+  const ph = (v) =>
+    !v || v.includes('...') || v.toLowerCase().startsWith('your') || v.includes('example.supabase')
+  const hasRealDb = !ph(env.VITE_SUPABASE_URL) && !ph(env.VITE_SUPABASE_ANON_KEY)
+  if (!hasRealDb) return
+
+  // Demo auth never reaches the real auth API, so doors + a database + demo
+  // mode cannot create anything. Unusual, but not unsafe — allow it.
+  if (env.VITE_DEMO_AUTH === '1') return
+
+  throw new Error(
+    'Refusing to build with VITE_PUBLIC_DOORS=1 against a live database.\n\n' +
+      'This combination re-opens the public signup funnel: "Get started" would\n' +
+      'point at Create account, and create_org would write a permanent org row\n' +
+      'into the Supabase project configured for this build.\n\n' +
+      'The prospect demo is meant to build WITHOUT Supabase credentials:\n' +
+      "  VITE_PUBLIC_DOORS=1 VITE_SUPABASE_URL='' VITE_SUPABASE_ANON_KEY='' npm run build\n\n" +
+      'If you genuinely intend a public signup funnel over live data, that is a\n' +
+      'product decision, not a build flag — remove this guard deliberately.\n',
+  )
+}
+
 export default defineConfig(({ command, mode }) => {
-  if (command === 'build') assertNotDemoBuild(mode)
+  if (command === 'build') {
+    assertNotDemoBuild(mode)
+    assertSafeDoorsBuild(mode)
+  }
 
   return {
     plugins: [react()],

@@ -4,13 +4,22 @@ import { useState, useRef, useEffect } from 'react'
 import { Bot, Send } from 'lucide-react'
 import { chat } from '../lib/api'
 import { tenant } from '../lib/theme'
+import { DEMO_DATA } from '../lib/demoData'
+import { demoAnswer } from '../lib/demoAssistant'
 
-const GREETING = `Hi — I'm your ${tenant.name} assistant. Ask me about your accounts, records or pipeline.`
+// Running-club vocabulary, not CRM-template vocabulary. This greeting and
+// these chips were inherited from the generic template and still said
+// "accounts", "pipeline" and "deals" — words a running club does not use about
+// its members. The chips matter more than they look: they are the only prompts
+// most people will ever send, so they double as a statement of what the
+// product is for. "What deals closed this month?" answered that question
+// wrongly.
+const GREETING = `Hi — I'm your ${tenant.name} assistant. Ask me about your runners, this week's sessions, turnout or volunteers.`
 
 const SUGGESTED = [
-  'Summarise my open pipeline',
-  'Which accounts need follow-up?',
-  'What deals closed this month?',
+  'Which runners are at risk of drifting?',
+  "What was turnout at the last session?",
+  'Who are our volunteers?',
 ]
 
 function MessageBubble({ msg }) {
@@ -63,6 +72,15 @@ export default function ChatThread() {
     setBusy(true)
 
     try {
+      // In the demo there is no /api to post to — see src/lib/demoAssistant.js
+      // for why that must stay true, and what it answers instead. Intercepted
+      // here rather than inside api.js so the real client stays a thin fetch
+      // wrapper with nothing demo-shaped in it.
+      if (DEMO_DATA) {
+        const reply = demoAnswer(text)
+        setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+        return
+      }
       const data = await chat(nextMessages, {
         app: tenant.name,
         industry: tenant.industry,

@@ -21,6 +21,7 @@
 // ============================================================
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, supabaseConfigured } from './supabase'
+import { DEMO_DATA, demoWhere, demoInsert, demoUpdate } from './demoData'
 import { useAuth } from '../auth/AuthProvider'
 import { DEFAULT_RUN_KM, RUN_DAYS, dayBounds, occurrenceFor, startOfWeek } from './schedule'
 
@@ -79,6 +80,31 @@ export function useMyRunner() {
   const seqRef = useRef(0)
 
   const load = useCallback(async () => {
+    // ── Demo mode ─────────────────────────────────────────────────────────
+    // This hook is the one data path that does NOT go through useData, so the
+    // fixture interception there does not reach it. Without this branch the
+    // prospect demo signs in, opens Profile, and sees a member who has never
+    // run: streak 0, four empty period cards, no check-in history. The club
+    // owner evaluating it is looking at the experience their own members
+    // would get, so that screen in particular has to be populated.
+    //
+    // Same three steps as the live path below, in the same order, so the two
+    // cannot drift in behaviour — only in where the rows come from.
+    if (DEMO_DATA) {
+      const mine =
+        demoWhere('records', { email: user?.email }, { order: 'created_at', ascending: true })[0] ||
+        null
+      setRunner(mine)
+      setAttendance(
+        mine ? demoWhere('attendance', { runner_id: mine.id }, { order: 'attended_at' }) : [],
+      )
+      // The fixtures carry duration_seconds, so times are genuinely available
+      // — asserting it rather than inferring it keeps the UI's time inputs on.
+      setTimesEnabled(true)
+      setError(null)
+      setLoading(false)
+      return
+    }
     if (!supabaseConfigured || !orgId || !user?.email) {
       setLoading(false)
       return
@@ -167,6 +193,29 @@ export function useMyRunner() {
       const startsAt = occurrenceFor(day)
       const { from, to } = dayBounds(startsAt)
 
+      if (DEMO_DATA) {
+        const found = demoWhere(
+          'sessions',
+          { type: 'run' },
+          {
+            order: 'starts_at',
+            ascending: true,
+            range: { column: 'starts_at', from: from.toISOString(), to: to.toISOString() },
+          },
+        )[0]
+        if (found) return found
+        // Checking in to a day the fixtures do not cover (a Monday later this
+        // week, say) mints the session, exactly as the live path does. The row
+        // lives in memory only, so a refresh returns the pristine club.
+        return demoInsert('sessions', {
+          type: 'run',
+          title: day.title,
+          location: day.location,
+          starts_at: startsAt.toISOString(),
+          recurring: true,
+        })
+      }
+
       const { data: existing } = await supabase
         .from('sessions')
         .select('id, starts_at')
@@ -206,6 +255,26 @@ export function useMyRunner() {
       setError(null)
       try {
         const session = await resolveSessionForDay(day)
+
+        if (DEMO_DATA) {
+          const dupe = demoWhere('attendance', {
+            session_id: session.id,
+            runner_id: runner.id,
+          })[0]
+          if (dupe) {
+            setAttendance((prev) => (prev.some((a) => a.id === dupe.id) ? prev : [dupe, ...prev]))
+            return
+          }
+          const row = demoInsert('attendance', {
+            session_id: session.id,
+            runner_id: runner.id,
+            attended_at: occurrenceFor(day).toISOString(),
+            checked_in_by: user?.id || null,
+            duration_seconds: seconds || null,
+          })
+          setAttendance((prev) => [row, ...prev])
+          return
+        }
 
         // Idempotent by re-read rather than by a unique constraint — we can't
         // add one without a migration. The button is disabled while `pending`
@@ -275,6 +344,11 @@ export function useMyRunner() {
     async (attendanceId, seconds) => {
       if (!timesEnabled || !runner) return
       setError(null)
+      if (DEMO_DATA) {
+        const row = demoUpdate('attendance', attendanceId, { duration_seconds: seconds })
+        if (row) setAttendance((prev) => prev.map((a) => (a.id === row.id ? row : a)))
+        return
+      }
       const { data, error: err } = await supabase
         .from('attendance')
         .update({ duration_seconds: seconds })

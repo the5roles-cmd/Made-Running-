@@ -6,6 +6,7 @@
 // + one [data-tenant] block in theme.css. See docs/NEW-CLIENT.md.
 // ============================================================
 import { ACTIVE_TENANT_KEY } from './theme'
+import { DEMO_DATA } from './demoData'
 
 // ── Entity labels, per industry ────────────────────────────
 // Everything else refers to entities by these labels, so flipping
@@ -456,10 +457,52 @@ export const isCoachRole = (role) => role === 'coach'
 // (decision: BOTH coach and admin), never for "can this person see the club".
 export const canManageClasses = (role) => isStaffRole(role) || isCoachRole(role)
 
+// ── Demo only: the club surface, put back in the rail ───────────────────────
+//
+// The note 120 lines up explains why the business group was deleted: the app
+// the club actually wanted is the one a RUNNER opens, and a member's seven
+// screens were sitting under twelve they could never use.
+//
+// That reasoning is about the CLUB's build and it still holds there. It does
+// not hold for the prospect demo, which exists to show a club owner the staff
+// side they are being asked to pay for. Those two screens survived the
+// deletion as routes (see App.jsx, "Staff only") and work perfectly — they
+// are simply unlinked, so today the only way to reach the club's people list
+// is to type /app/records, which no prospect will do.
+//
+// Scope, deliberately narrow:
+//   • DEMO_DATA, so the club's own production rail is untouched. They chose
+//     to remove this; a flag flip should not undo a product decision.
+//   • `staff: true`, so the "view as runner" toggle still hides it — a
+//     prospect checking what their members would see must not see it either.
+//   • Only routes that EXIST. Dashboard, Partners, Pipeline, Chapters,
+//     Outreach and Sales were deleted as FILES, not just as links; listing
+//     them would produce rail entries that bounce off the /app catch-all,
+//     which is a worse demo than not listing them.
+//
+// Both icons are already imported AND in the ICONS map in Sidebar.jsx. Adding
+// a new icon name here white-screens every authenticated route and does not
+// fail the build — read the comment above ICONS before changing these.
+const DEMO_STAFF_GROUP = {
+  label: 'Club admin',
+  staff: true,
+  items: [
+    // Labelled "Runners" rather than "Records": the route kept the generic
+    // template name, the rail should speak the club's language.
+    { to: '/app/records', label: 'Runners', icon: 'Users' },
+    { to: '/app/sessions', label: 'Sessions', icon: 'ClipboardCheck' },
+  ],
+}
+
 // Filter the rail for a role. Groups that end up empty are dropped entirely,
 // so a member never sees a lone "System" heading with nothing beneath it.
 export function navFor(role) {
-  if (isStaffRole(role)) return NAV_GROUPS
+  // First, not last. A club owner evaluating the product should meet the
+  // staff screens before "My profile" — in the demo, the admin side IS the
+  // pitch, and burying it under the member rail hides what is being sold.
+  const NAV = DEMO_DATA ? [DEMO_STAFF_GROUP, ...NAV_GROUPS] : NAV_GROUPS
+
+  if (isStaffRole(role)) return NAV
 
   // A coach sits between a member and staff, so the filter needs three
   // outcomes rather than two:
@@ -472,7 +515,7 @@ export function navFor(role) {
   // and one clause, not rewriting this function.
   const canManage = canManageClasses(role)
 
-  return NAV_GROUPS.filter((g) => !g.staff)
+  return NAV.filter((g) => !g.staff)
     .map((g) => ({
       ...g,
       items: g.items.filter((i) => !i.staff && (!i.manage || canManage)),

@@ -7,7 +7,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase, supabaseConfigured, TABLE_MISSING, isNetworkError } from './supabase'
 import { isDemoAuth } from './demoAuth'
+import { DEMO_DATA, demoList, demoRow, demoInsert, demoUpdate } from './demoData'
 import { useAuth } from '../auth/AuthProvider'
+
+// ── Demo mode serves fixtures instead of Postgres ───────────────────────────
+// A demo build has no Supabase credentials, so every hook below would take its
+// `!supabaseConfigured` early return and leave the screen empty. Correct, but
+// it makes the prospect demo a tour of blank pages. These four hooks are the
+// only data path the CRM screens use, so intercepting here fills the entire
+// product from one place — no screen needs to know it is in a demo.
+//
+// DEMO_DATA itself now lives in demoData.js, because useMyRunner.js needs the
+// same switch and two definitions of it would be a bug waiting to happen.
 
 // ── What counts as worth telling the user about ─────────────────────────
 // A read that fails because the database is unreachable is not news on a
@@ -35,6 +46,11 @@ export function useList(table, { order = 'created_at', ascending = false, select
   const [missing, setMissing] = useState(false)
 
   const refresh = useCallback(async () => {
+    if (DEMO_DATA) {
+      setRows(demoList(table, { order, ascending }))
+      setLoading(false)
+      return
+    }
     if (!supabaseConfigured || !orgId) {
       setLoading(false)
       return
@@ -69,6 +85,11 @@ export function useRow(table, id, select = '*') {
   const [loading, setLoading] = useState(true)
 
   const refresh = useCallback(async () => {
+    if (DEMO_DATA) {
+      setRow(demoRow(table, id))
+      setLoading(false)
+      return
+    }
     if (!supabaseConfigured || !orgId || !id) {
       setLoading(false)
       return
@@ -91,6 +112,10 @@ export function useInsert(table) {
   const { orgId } = useAuth()
   return useCallback(
     async (values) => {
+      // Without this a demo build throws a TypeError on `supabase.from` the
+      // first time a prospect presses "New Runner" — the single most likely
+      // thing for them to try.
+      if (DEMO_DATA) return demoInsert(table, values)
       const { data, error } = await supabase
         .from(table)
         .insert({ ...values, org_id: orgId })
@@ -108,6 +133,7 @@ export function useUpdate(table) {
   const { orgId } = useAuth()
   return useCallback(
     async (id, values) => {
+      if (DEMO_DATA) return demoUpdate(table, id, values)
       const { data, error } = await supabase
         .from(table)
         .update(values)

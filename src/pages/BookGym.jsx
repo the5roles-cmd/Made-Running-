@@ -125,14 +125,36 @@ function mergeCoach(cls, db, coachBySlug, bioByName) {
 
   const slug = db?.coach_slug || coachSlug(name)
   const profile = coachBySlug[slug] || null
-  const written = (profile?.bio || '').trim()
+  const derived = (bioByName[name] || '').trim()
+  const supplied = (profile?.bio || '').trim()
+
+  // ── Why this compares the text instead of trusting the source ──────
+  // `written` drives the heading below: "About Jade" for Jade's own words,
+  // "On the timetable" for a sentence this app assembled. Taking "it arrived
+  // on the profile row, therefore a coach wrote it" gets that wrong in two
+  // places that both exist today.
+  //
+  // supabase-coaches-seed.sql's placeholder bios ARE these derived sentences —
+  // deriveCoachBio() in hubClasses.js was written to reproduce them. So on a
+  // real install with the seed run and nothing edited, every card says "About
+  // Jade" over a line generated from the PDF. The demo build hits the same
+  // thing from the other direction: hubCoachesToPublic() supplies the derived
+  // bio because /coaches has nothing else to show.
+  //
+  // Comparing to the derived line makes the heading mean what it says. The
+  // moment a coach replaces the placeholder with one word of their own the
+  // strings diverge and the credit moves to them — which is the only event
+  // that should ever change it.
+  const written = supplied && supplied !== derived ? supplied : ''
 
   return {
     name,
     href: profile ? coachPath(slug) : null,
     photo: profile?.photo_url || null,
     credentials: (profile?.credentials || '').trim() || null,
-    bio: written || bioByName[name] || null,
+    // The TEXT precedence is unchanged — a supplied bio still beats the
+    // derived one. Only the ATTRIBUTION moved.
+    bio: supplied || derived || null,
     // Drives the heading only: "About Jade" for words Jade wrote, "On the
     // timetable" for a sentence this app assembled. The club should never be
     // shown a paragraph in a coach's voice that the coach did not write.

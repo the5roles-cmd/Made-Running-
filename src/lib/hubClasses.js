@@ -663,6 +663,57 @@ export function coachRoster(classes = HUB_CLASSES) {
   }))
 }
 
+/**
+ * coachRoster(), reshaped into the rows public_coaches() returns.
+ *
+ * Same trick as hubClassToPublic() and for the same reason: /coaches keeps ONE
+ * code path. The page's three states are "loading", "the SQL has not been run"
+ * and "here are the coaches", and without this it only ever reached the middle
+ * one in a build with no database — printing *"Run supabase-classes.sql then
+ * supabase-coaches-seed.sql in the Supabase SQL editor"* to whoever opened the
+ * page. Correct advice for the club's developer; unreadable to a prospect, and
+ * it was the first thing they'd see after clicking a coach's name on /book.
+ *
+ * ── What is null, and why it is not an omission ────────────────────
+ * photo_url, credentials, rating_avg. These are eight real people's first
+ * names. A portrait, a qualification or an average star rating cannot be
+ * derived from a timetable, and guessing any of them would put a claim about a
+ * named human being on a public page — the one thing this codebase's honesty
+ * rule exists to stop. The card already renders without them: initials in
+ * place of a photo, no credentials line, no rating row.
+ *
+ * `bio` is the one filled field, and it is SAFE because it is generated FROM
+ * the timetable — "Jade leads CaTcH a Circuit on Tuesday evenings and Hot
+ * Kettlebells on Monday mornings." It cannot name a class Jade does not lead,
+ * because there is nowhere for that name to come from.
+ *
+ * rating_count is 0 rather than null on purpose: ratingCopy() branches on the
+ * COUNT, and 0 is what makes it return null instead of a 0.0-star review.
+ */
+export function hubCoachesToPublic(classes = HUB_CLASSES) {
+  return coachRoster(classes).map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    bio: c.bio,
+    photo_url: null,
+    credentials: null,
+    rating_avg: null,
+    rating_count: 0,
+    // dbSlug, not the local id — this is the key classPath() builds the link
+    // from, and the class page resolves it with hubClassByDbSlug(). Using
+    // `id` here would render eight cards of links that all 404.
+    classes: c.classes.map((cl) => ({
+      slug: cl.dbSlug,
+      name: cl.title,
+      recurrence_day: cl.day,
+      recurrence_time: cl.time,
+      location: null,
+      female_only: !!cl.femaleOnly,
+      is_paused: !!cl.paused,
+    })),
+  }))
+}
+
 // ── Availability (DESIGN DECISION — see note in BookGym.jsx) ─────────
 //
 // Decides what a visitor may do with a given class. Split out from the

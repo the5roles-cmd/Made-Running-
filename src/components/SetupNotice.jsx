@@ -1,9 +1,23 @@
 // Shown when Supabase isn't configured yet. Explains, doesn't crash.
 import { Database } from 'lucide-react'
 import { supabaseConfigured } from '../lib/supabase'
+import { isDemoAuth } from '../lib/demoAuth'
 
 export default function SetupNotice() {
   if (supabaseConfigured) return null
+  // ── Not in a demo build ───────────────────────────────────────────────
+  // This notice assumes "no database" is a MISTAKE and tells the reader how
+  // to fix it — copy .env.example, run the SQL. In a demo build it is the
+  // deliberate configuration, and the advice is addressed to the wrong
+  // person entirely: the prospect demo is sent to potential customers, who
+  // would read setup instructions for software they do not own as proof it
+  // is unfinished. Eleven screens render this, so the suppression belongs
+  // here rather than at each call site.
+  //
+  // Nothing is silently hidden by this. The fixed "DEMO MODE · NO LIVE
+  // DATABASE" badge is on screen the whole time (src/components/DemoBanner
+  // .jsx), so the same fact is still stated — just to the right audience.
+  if (isDemoAuth) return null
   return (
     <div className="notice">
       <div className="rowflex" style={{ gap: 'var(--s3)', marginBottom: 'var(--s2)' }}>

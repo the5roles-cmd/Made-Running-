@@ -59,6 +59,11 @@ export const isDemoAuth = import.meta.env.VITE_DEMO_AUTH === '1'
 const DEMO_USER_ID = '00000000-0000-4000-8000-000000000001'
 const DEMO_ORG_ID = '00000000-0000-4000-8000-0000000000a1'
 
+// Re-exported so src/lib/demoData.js can stamp org_id on every fixture from
+// the same constant the session uses. Two literals that must match is a bug
+// waiting to happen — the rows would be invisible to anything org-scoped.
+export const demoOrgId = DEMO_ORG_ID
+
 // Shaped to match what Supabase actually returns, because the app reads these
 // paths directly: user.email, user.user_metadata.full_name, session.user.id.
 // A thinner stub would throw somewhere deep in a component instead of here.

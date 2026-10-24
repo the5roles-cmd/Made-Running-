@@ -37,15 +37,36 @@
 // The cost of being wrong in the other direction is the one that matters, and
 // it is covered: the switch is statically false, so nothing renders.
 //
-// A VITE_PUBLIC_DOORS=1 in .env.local would also have worked, and would have
-// covered `npm run preview` as well, which this does not: preview serves a
-// production build, so it correctly shows the stripped site. That was the
-// deciding trade-off. An env var is something a person can set on Vercel one
-// afternoon and silently un-strip the live site; DEV is false in EVERY build
-// there has ever been, including a dist/ someone drags into a host by hand.
-// If you do want a local production build to show the doors, say so and this
-// becomes `import.meta.env.DEV || import.meta.env.VITE_PUBLIC_DOORS === '1'`
-// — one line, and the comment above is the reason to think twice first.
+// ── VITE_PUBLIC_DOORS: the escape hatch this comment used to warn against ───
+//
+// Above, in October 2026, this file argued hard for DEV over an env var,
+// because "an env var is something a person can set on Vercel one afternoon
+// and silently un-strip the live site", and offered the one-line change if it
+// were ever actually needed. It was needed, so here it is — but read the
+// argument above as still standing, because it was right.
+//
+// Why it was needed: the club's site must stay stripped, AND a complete,
+// clickable version has to be sendable to prospects as a URL. A dev server
+// cannot be emailed. That is a second DEPLOYED build, which DEV cannot
+// express, because DEV is false in every build by design.
+//
+// So the rule is no longer "no deployed build shows the doors" but:
+//
+//   made-running-platform (maderunning.co.uk)  → variable NOT set → stripped
+//   the prospect demo project                   → VITE_PUBLIC_DOORS=1 → full
+//
+// which is weaker, because it now depends on a dashboard staying untouched
+// rather than on a literal that cannot be set. Two things narrow that back:
+//
+//   1. The demo build carries no Supabase credentials at all, so "doors open"
+//      there means doors onto an empty demo, not onto the club's data.
+//   2. vite.config.js refuses to BUILD the actually-dangerous combination —
+//      doors open + a real database + registration on, i.e. the one that lets
+//      strangers mint orgs in the club's Postgres. Setting this variable on
+//      the club's project fails the build instead of publishing the funnel.
+//
+// That second guard is the point. The risk was never the buttons; it was what
+// pressing them writes. See assertSafeDoorsBuild() in vite.config.js.
 //
 // ⚠️  LOCAL DOES NOT MEAN A LOCAL DATABASE.
 // .env.local points VITE_SUPABASE_URL at the club's REAL Supabase project.
@@ -58,4 +79,5 @@
 // Everything these flags hide is hidden from a BROWSER, and that is all. RLS,
 // the SECURITY DEFINER functions and RequireAuth/RequireStaff are what protect
 // the club's data, and none of them read this file.
-export const LOCAL_ONLY = import.meta.env.DEV
+export const LOCAL_ONLY =
+  import.meta.env.DEV || import.meta.env.VITE_PUBLIC_DOORS === '1'

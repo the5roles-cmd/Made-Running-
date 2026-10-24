@@ -14,6 +14,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase, supabaseConfigured, TABLE_MISSING } from './supabase'
 import { useAuth } from '../auth/AuthProvider'
 import { isStaffRole } from './constants'
+import { DEMO_DATA, demoList } from './demoData'
+// The demo has no coaches TABLE and no RPC to call, but it does have the
+// club's real timetable — and coachRoster() already derives a coach list from
+// it, bios included. See the demo branch in usePublicCoaches.
+import { hubCoachesToPublic } from './hubClasses'
 // The public class page resolves its CLUB from the deployment's tenant key —
 // the same way BookGym does. classes.slug is unique per org, not globally, so
 // a class slug alone cannot identify a row.
@@ -179,6 +184,29 @@ export function useManagedClasses() {
   const isStaff = isStaffRole(effectiveRole)
 
   const refresh = useCallback(async () => {
+    // The demo's timetable, derived from the club's real PDF — see the
+    // `classes` fixture in demoData.js. Intercepted here and not inside
+    // demoList, because the two-column ordering below is this hook's rule and
+    // the fixture store only knows how to sort on one key.
+    if (DEMO_DATA) {
+      const rows = demoList('classes')
+      // Day first, then time — same as the .order() pair in the real query.
+      // Sorted explicitly rather than leaning on the fixture happening to be
+      // written in timetable order: that would be a correct screen held up by
+      // an invisible property of an array literal, and the first class someone
+      // appends out of order would break it with no error anywhere.
+      setRows(
+        [...rows].sort(
+          (a, b) =>
+            a.recurrence_day - b.recurrence_day ||
+            String(a.recurrence_time).localeCompare(String(b.recurrence_time)),
+        ),
+      )
+      setError(null)
+      setMissing(false)
+      setLoading(false)
+      return
+    }
     if (!supabaseConfigured || !orgId) {
       setLoading(false)
       return
@@ -916,6 +944,15 @@ export function usePublicCoaches() {
   useEffect(() => {
     let alive = true
     ;(async () => {
+      // A demo build has no RPC to call, so without this it fell into the
+      // `missing` branch below and showed a prospect two SQL filenames to run.
+      // The timetable is right there in the bundle and coachRoster() already
+      // derives the people from it, so the honest answer is the real coach
+      // list with the fields nobody can derive left empty.
+      if (DEMO_DATA) {
+        if (alive) { setRows(hubCoachesToPublic()); setMissing(false); setLoading(false) }
+        return
+      }
       if (!supabaseConfigured) {
         if (alive) { setLoading(false); setMissing(true) }
         return
