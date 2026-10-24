@@ -3,7 +3,7 @@
 // Focus/Escape handling mirrors the mobile-drawer pattern in Layout.jsx.
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Menu, Search, Bot, Eye, LogOut, Settings, ChevronDown } from 'lucide-react'
+import { Menu, Bot, Eye, LogOut, Settings, ChevronDown } from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { isStaffRole } from '../lib/constants'
 import { tenant } from '../lib/theme'
@@ -311,18 +311,23 @@ export default function Topbar({ hamburgerRef, drawerOpen, onHamburger, onOpenCh
         <Menu size={20} />
       </button>
 
-      {/* Search */}
-      <div className="topbar__search">
-        <Search size={16} aria-hidden="true" />
-        <input
-          className="input"
-          type="search"
-          placeholder="Search…"
-          aria-label="Search"
-          style={{ border: 'none', background: 'transparent', outline: 'none', flex: 1 }}
-        />
-      </div>
+      {/* ── The search box that used to live here has been REMOVED ────────
+          It had no onChange, no state and no consumer anywhere in the app —
+          a styled <input> that accepted text and did nothing with it. Nothing
+          was half-built; there is no search feature to wire it to.
 
+          A search box is a CLAIM. Someone types a runner's name, presses
+          Enter, and the screen does not move: the product reads as broken,
+          which is a worse outcome than the capability being absent. That is
+          the same failure as the empty assistant bubble on a static deploy,
+          and this build exists to be sent to clubs deciding whether to buy.
+
+          It was also the cause of a real mobile defect. `flex: 1` on a dead
+          input let it collapse to 24px wide at 375px — two characters of
+          visible text — while still taking space from four controls that do
+          work. The honesty fix and the layout fix were the same edit.
+
+          When search is built it comes back, with a handler. */}
       <div className="topbar__spacer" />
 
       {/* Org switcher — only when 2+ orgs */}

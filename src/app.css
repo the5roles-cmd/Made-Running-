@@ -329,26 +329,10 @@ a.sidebar__brand:hover {
   gap: var(--s4);
   padding: 0 var(--s5);
 }
-.topbar__search {
-  flex: 1;
-  max-width: 460px;
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-full);
-  padding: 8px var(--s4);
-  color: var(--muted);
-}
-.topbar__search input {
-  border: 0;
-  background: transparent;
-  outline: none;
-  flex: 1;
-  font-size: var(--fs-sm);
-  color: var(--ink);
-}
+/* .topbar__search and .topbar__search input were deleted with the dead search
+   input they styled — see the note in Topbar.jsx. Left as a comment rather
+   than silently dropped so that the next person to add search knows the
+   classes are free and why they went. */
 .topbar__spacer {
   flex: 1;
 }
@@ -493,6 +477,54 @@ a.sidebar__brand:hover {
 .btn--sm {
   padding: 6px var(--s3);
   font-size: var(--fs-xs);
+}
+
+/* ★ ten-k #07 — a 30px button is a desktop button
+   .btn--sm is 30px tall, which is right for a dense admin table a mouse is
+   pointing at and below the 44px minimum for a finger. The Classes screen
+   puts three of them on every row (Edit · Copy link · Copy message), so a
+   coach sharing a class on their phone was aiming at thirty 30px targets.
+
+   The selector is `.btn`, NOT `.btn--sm`. The first version of this rule
+   targeted only the modifier, on the assumption that the default button was
+   already fine. It is not: `padding: 9px` plus a --fs-sm line plus two 1px
+   borders measures 38-41px depending on whether the label wraps, so the
+   plain .btn missed the minimum too — quietly, by three pixels, which is
+   exactly the sort of miss that survives a reading of the stylesheet and
+   only shows up when something measures it. Targeting the base class covers
+   both, because every small button carries .btn as well.
+
+   ── Why a media query rather than just making buttons 44px ──────────
+   Because the two contexts genuinely want different sizes, and 44px
+   everywhere would loosen every admin table on a 27" screen to fix a problem
+   that only exists on glass. "Mobile that's designed, not shrunk" cuts both
+   ways: the desktop layout should not be stretched to suit the phone either.
+
+   `pointer: coarse` is the real test — a 1024px tablet needs 44px as much as
+   a 375px phone does, and a 600px desktop window does not. The width query is
+   kept alongside it because a few touch devices report `fine`, and because it
+   is the one of the two that can be verified in a resized desktop browser.
+
+   Only min-height, not min-width: every sub-44px control measured was short,
+   not narrow, and a min-width would stretch icon-only buttons into lozenges.
+
+   Inline links in a sentence are deliberately NOT covered — "Sign in here",
+   "Privacy", "How we look after your details" all measure ~18px tall and all
+   stay that way. Their height is set by the line-height of the prose around
+   them, so padding them to 44px would either break the paragraph's leading or
+   overlap the neighbouring lines. WCAG 2.5.8 exempts them for that reason,
+   and the honest version of this rule is to fix the controls, not the prose.
+
+   The test is "is there a sentence around it", not "is it a link". A lone
+   <Link> in a <footer> has no sentence to be inline in, so the two page
+   footers that have one are padded individually — see .cp__pageFoot a in
+   ClassPage.jsx and .co__pageFoot a in Coaches.jsx. An earlier draft of this
+   comment listed one of those as exempt, which was wrong: it was a standalone
+   call to action that had simply never been measured. */
+@media (pointer: coarse), (max-width: 640px) {
+  .btn {
+    min-height: 44px;
+  }
 }
 
 /* ============================================================
@@ -992,8 +1024,16 @@ a.sidebar__brand:hover {
   gap: var(--s2);
   align-items: flex-end;
 }
+/* 44, not 42. The base `.textarea` floor is 96px (a comment box); the composer
+   overrides it down to one line, and that override was the only field in the
+   app still under the touch minimum — it measured 43.5px at 375px, because a
+   rows=1 textarea at the mobile 16px font intrinsically needs 43.5px and the
+   42px floor never applied. Half a pixel is not a usability problem; having a
+   number in the stylesheet that quietly disagrees with the rule the four lines
+   above it enforce is, because the next person to touch this reads 42 as
+   intentional. */
 .chat__composer .textarea {
-  min-height: 42px;
+  min-height: 44px;
   max-height: 140px;
 }
 .chatpanel {

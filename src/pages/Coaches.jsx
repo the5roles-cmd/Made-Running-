@@ -462,5 +462,20 @@ const COACHES_CSS = `
   max-width: 720px; margin: 34px auto 0; padding: 0 20px;
   font-size: 13px;
 }
-.co__pageFoot a { color: var(--accent-ink); }
+/* Same treatment as .cp__pageFoot a in ClassPage.jsx, for the same reason and
+   on identical markup — a lone 13px <Link> in a <footer>, measuring 126x18 as
+   a tap target. The two page footers were written as copies of each other and
+   only one of them got the fix; this is the other one.
+
+   Deliberately NOT treated as an "inline link in a sentence", which is the
+   one exemption the 44px rule allows: there is no sentence here. It is the
+   only control on the page below the coach list, and it is the last thing a
+   thumb reaches at the very bottom of the screen. inline-flex plus min-height
+   makes the whole 44px band tappable without changing how it looks, and the
+   padding is horizontal too so a near-miss either side still lands. */
+.co__pageFoot a {
+  color: var(--accent-ink);
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: 0 12px;
+}
 `
