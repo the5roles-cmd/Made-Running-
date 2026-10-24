@@ -5,6 +5,7 @@ import AuthSplash from '../auth/AuthSplash'
 import { supabase, supabaseConfigured, friendlyError } from '../lib/supabase'
 import { safeNext } from '../lib/authNext'
 import { REGISTRATION_OPEN } from '../lib/registration'
+import { localSignupGuard } from '../lib/localSignupGuard'
 import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT } from '../lib/password'
 import { tenant } from '../lib/theme'
 import usePageTitle from '../lib/usePageTitle'
@@ -196,6 +197,21 @@ export default function Login() {
         // Only a genuine signup may create a workspace, and only when the
         // account really has none. Signing in never creates anything.
         if (mode === 'signup' && list.length === 0) {
+          // The dev server talks to the club's LIVE Supabase project, so a
+          // signup here leaves a permanent org row in their real data. This
+          // is the one thing LOCAL_ONLY cannot decide on its own: it governs
+          // who is OFFERED the tab, not what the tab writes. The guard
+          // returns null today, so behaviour is unchanged until a policy is
+          // chosen — see src/lib/localSignupGuard.js.
+          const refusal = localSignupGuard({
+            email: email.trim(),
+            workspaceName: business.trim() || 'My workspace',
+          })
+          if (refusal) {
+            setErrorMsg(refusal)
+            setBusy(false)
+            return
+          }
           const { error: orgError } = await supabase.rpc('create_org', {
             p_name: business.trim() || 'My workspace',
             p_industry: tenant.industry,

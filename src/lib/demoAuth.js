@@ -20,10 +20,37 @@
 //     failure mode that actually happens: not someone bypassing the flag,
 //     but someone deploying a build they forgot was a demo.
 //
-// Vite inlines import.meta.env.* as literals at build time, so in a normal
-// build the test below becomes `'undefined' === '1'` → false, and every
-// branch guarded by it is removed by dead-code elimination. The fake user
-// object is not merely unreachable in production — it is not in the bundle.
+// Vite inlines import.meta.env.* as literals at build time, so in a build made
+// WITHOUT the variable the test below becomes `undefined === '1'` → false, and
+// everything it guards is tree-shaken out. Measured on the live bundle
+// (index-e9SGQxfP.js, Oct 2026): "Demo Admin", 'demo-access-token' and
+// 'demo@maderunning' are all absent, /app redirects to /login, and no banner
+// renders. The fake session is not merely unreachable in production — it is
+// genuinely not shipped.
+//
+// ⚠️  BUT THE SAFETY LIVES IN THE ENVIRONMENT, NOT IN THIS FILE.
+// `npm run build` on a machine whose .env.local sets VITE_DEMO_AUTH=1 — i.e.
+// this laptop, today — produces a bundle where isDemoAuth is TRUE, aimed at
+// the club's REAL Supabase URL from the same file. Measured, not feared: that
+// dist/ served by `vite preview` walked straight into /app as Demo Admin.
+// Vercel is unaffected because .env.local is gitignored and the variable is
+// not set there, which is exactly why both of those must stay true. Build with
+// `VITE_DEMO_AUTH=0 npm run build` if you need a trustworthy local dist/, and
+// see the guard in vite.config.js that now refuses the dangerous one.
+//
+// ⚠️  AND DO NOT VERIFY THIS BY GREPPING FOR "VITE_DEMO_AUTH".
+// Vite substitutes the VALUE, so the NAME is absent from dist/ whether the
+// flag was 1 or unset. An earlier version of this comment cited that absence
+// as proof of safety; the build it was measured on was a live demo build. Grep
+// for a CONSEQUENCE instead — 'demo-access-token' is the reliable probe — or
+// just load /app and look.
+//
+// Treat the values below as placeholders rather than credentials regardless:
+// the ids address nothing real, and RLS would refuse them even if they did.
+// (Contrast src/lib/localOnly.js, where the gated UI strings genuinely DO
+// survive in the bundle as unreachable code. Same shape of flag, different
+// outcome; measured both ways, and the reason is bundler internals I have not
+// pinned down, so neither comment should be read as a general rule.)
 export const isDemoAuth = import.meta.env.VITE_DEMO_AUTH === '1'
 
 // A stable id. Fixed rather than random so that anything persisted against it

@@ -1,3 +1,5 @@
+import { LOCAL_ONLY } from './localOnly'
+
 // ── Does the public site ask people to join? ─────────────────────────────────
 //
 // Not the same question as CRM_PUBLIC, though they were flipped on the same
@@ -47,7 +49,18 @@
 // a louder door than the one we took down. The entry was removed by hand, so
 // if you flip this true you must put it back; XML cannot read a JS constant.
 //
-// To ask for members again, flip this to true: the four buttons come back,
-// the card returns to the grid and the grid widens to hold it (both grids
-// size themselves from the array). Then restore the sitemap entry.
-export const JOIN_PUBLIC = false
+// ── Asking locally, silent on the website (Oct 2026) ────────────────────────
+// Everything above describes the PUBLIC site and still does. The ask had to
+// stay somewhere runnable, so this follows LOCAL_ONLY: on a dev server all
+// four buttons are back, the card is back in the grid and the grid widens to
+// hold it; in every build Vercel serves, none of it is in the bundle.
+//
+// The sitemap is the one piece that cannot follow a flag — see the paragraph
+// above. Static XML has no idea which machine is serving it, and a dev server
+// is not what Google reads, so /join simply stays out of it. That is correct
+// for the only reader that matters.
+//
+// To ask the PUBLIC for members again, make this `true` outright — the four
+// buttons come back and both grids size themselves from the array — and then
+// restore the sitemap entry by hand.
+export const JOIN_PUBLIC = LOCAL_ONLY

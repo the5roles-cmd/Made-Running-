@@ -1,3 +1,5 @@
+import { LOCAL_ONLY } from './localOnly'
+
 // ── Who is allowed to create a website account ──────────────────────────────
 //
 // Two different things in this app are both called "signing up", and only one
@@ -46,4 +48,15 @@
 // not a member of theirs. Staff accounts are made in the Supabase dashboard
 // and given a membership row — exactly the two steps in
 // supabase-recover-staff-login.sql.
-export const REGISTRATION_OPEN = false
+//
+// ── Open on a dev server, closed on the website (Oct 2026) ──────────────────
+// The tab had to stay reachable somewhere, to work on and to demo, so the
+// constant now follows LOCAL_ONLY instead of being hardcoded false. The whole
+// paragraph above still applies to every build Vercel serves.
+//
+// ⚠️  AND IT APPLIES TO YOU TOO, LOCALLY.
+// The dev server talks to the club's REAL Supabase project. Creating an
+// account at localhost:4970 runs the same create_org RPC and mints the same
+// junk workspace in the same live database — the flag decides who is OFFERED
+// the tab, not what the tab does. Use an address you can find again.
+export const REGISTRATION_OPEN = LOCAL_ONLY

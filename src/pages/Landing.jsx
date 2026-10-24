@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { loginHref, signupHref } from '../lib/authNext'
 import { CRM_PUBLIC } from '../lib/crmPublic'
 import { JOIN_PUBLIC } from '../lib/joinPublic'
+import { LOCAL_ONLY } from '../lib/localOnly'
 import { REGISTRATION_OPEN } from '../lib/registration'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { InstagramMark } from '../components/BrandMarks'
@@ -324,20 +325,25 @@ const JOIN_DEST = CRM_PUBLIC ? signupHref('/join') : '/join'
 // switches off rather than exported into a lib nothing else imports. A flag
 // in lib/ implies "ask me from anywhere"; this is not that.
 //
-// ⚠️  READ THIS BEFORE WONDERING WHERE THE NAVIGATION WENT.
-// With the join CTAs already gone (JOIN_PUBLIC) and "Log in" gone with the
-// CRM (CRM_PUBLIC), these three cards were the LAST links out of the landing
-// page. Switching them off leaves the homepage with the wordmark, Instagram
-// and Privacy — and that is all. /book, /coaches and coach-application.html
-// still work, still render and are still in the sitemap, but nothing on the
-// site points at them any more: they are URL-and-bookmark doors now, exactly
-// like /login. That is the club's call (Oct 2026) and it is deliberate — the
-// homepage is a film about the club, not a menu — but it is a big enough
-// consequence to be written down rather than discovered.
+// ⚠️  READ THIS BEFORE WONDERING WHERE THE NAVIGATION WENT (on the website).
+// With the join CTAs gone (JOIN_PUBLIC) and "Log in" gone with the CRM
+// (CRM_PUBLIC), these three cards are the LAST links out of the landing page.
+// With all four flags off together, the live homepage has the wordmark,
+// Instagram and Privacy — and that is all. /book, /coaches and
+// coach-application.html still work, still render and are still in the
+// sitemap, but nothing on the site points at them: they are URL-and-bookmark
+// doors now, exactly like /login. That is the club's call (Oct 2026) and it
+// is deliberate — the homepage is a film about the club, not a menu — but it
+// is a big enough consequence to be written down rather than discovered.
 //
-// Flip to true to bring the row back. The array below is untouched and the
-// grid sizes itself from its length, so nothing else needs editing.
-const SHOW_QUICK_PATHS = false
+// Which is also why this follows LOCAL_ONLY rather than being hardcoded: a
+// dev server still shows the complete page, cards and all, so the stripped
+// version can be compared against the full one without a git checkout.
+//
+// Make it `true` outright to bring the row back on the PUBLIC site. The array
+// below is untouched and the grid sizes itself from its length, so nothing
+// else needs editing.
+const SHOW_QUICK_PATHS = LOCAL_ONLY
 
 const QUICK_PATHS = [
   // ONE join door, not two. "I am a Runner" and "Join the Community" both

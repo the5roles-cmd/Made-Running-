@@ -1,3 +1,5 @@
+import { LOCAL_ONLY } from './localOnly'
+
 // ── Does the public site offer the CRM at all? ───────────────────────────────
 //
 // Three different things share this one deployment, and only the third is
@@ -49,8 +51,17 @@
 // the /app routes. If you ever need the CRM to be genuinely unreachable from
 // the internet, this flag is the wrong tool — that is a hosting decision.
 //
-// To re-attach the CRM to the public site, flip this to true: the "Log in"
-// button returns, the CTAs go back through the signup door, and the cards go
-// back to promising an account. Then flip REGISTRATION_OPEN too, or the
-// Create account tab the buttons now point at will not be there.
-export const CRM_PUBLIC = false
+// ── Attached locally, detached on the website (Oct 2026) ────────────────────
+// Everything above describes the PUBLIC site and still does. What changed is
+// that "detached" is no longer unconditional: the club wanted the full thing
+// still runnable — to work on, to demo, and to see the two versions side by
+// side — so this follows LOCAL_ONLY. On a dev server the "Log in" button is
+// back in the nav and the CTAs go through the signup door exactly as they used
+// to; in every build Vercel serves, the branches are not in the bundle.
+//
+// REGISTRATION_OPEN follows the same flag, so the Create account tab these
+// buttons point at is there when they are — that pairing was the one thing
+// easy to get wrong when both were hand-set.
+//
+// To re-attach the CRM to the PUBLIC site as well, make this `true` outright.
+export const CRM_PUBLIC = LOCAL_ONLY
